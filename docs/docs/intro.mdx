@@ -1,0 +1,116 @@
+---
+title: Welcome to ServerRawler
+hide_title: true
+sidebar_position: 1
+---
+
+<div align="center">
+  <h1>ServerRawler</h1>
+  <p>A high-performance Minecraft server crawler, <br /> designed to discover publicly reachable servers.</p>
+</div>
+
+---
+
+<div align="center">
+  <a href="https://rust-lang.org/"><img src="https://img.shields.io/badge/rust-gray?style=for-the-badge&logo=rust&logoColor=orange" alt="Rust"/></a>
+  <a href="https://mysql.com/"><img src="https://img.shields.io/badge/mysql-gray?style=for-the-badge&logo=mysql&logoColor=orange" alt="MySQL"/></a>
+  <a href="https://www.jetbrains.com/"><img src="https://img.shields.io/badge/jetbrains-gray?style=for-the-badge&logo=jetbrains&logoColor=orange" alt="JetBrains"/></a>
+  <br />
+  <a href="https://discord.gg/vbZ2FKyjMN"><img src="https://img.shields.io/discord/1421594734442319996.svg?style=for-the-badge&logo=discord&logoColor=orange&label=discord&color=orange" alt="Discord"/></a>
+  <a href="https://github.com/Cyberdolfi/ServerRawler/releases/"><img src="https://shields.io/github/downloads/cyberdolfi/serverrawler/total?style=for-the-badge&label=github%20downloads&color=orange&logo=github&logoColor=orange" alt="GitHub Downloads"/></a>
+</div>
+
+---
+
+:::warning[Alpha Warning]
+
+This project is currently in early alpha!  
+The documentation is still being written and features are still being added.
+
+:::
+---
+
+## Features
+- ⏰ Optimized for high performance
+- 📝 Supported protocols:
+  - Minecraft **Ping** protocol
+  - Minecraft **Query** protocol
+  - Minecraft **Join** protocol
+- 🔷 Control and monitoring via Discord bot
+- 🔥 Easy to install and configure
+- 💾 Saves data in a MySQL database
+
+## Planned
+- 💾 SQLite support
+- 🛜 Proxy support
+- 🟢 Stable release
+
+---
+
+### What data does it save?
+- MOTD (Description)
+- Max./Online players
+- Online players (with **Username** and **UUID**)
+- Plugins
+- Mods
+- Online mode
+- Whitelist status (only available on **offline-mode** servers)
+- Server version and software
+- ... and much more!
+
+---
+
+## How to prevent your server from being scanned
+
+### Using the server description
+You can add `§b§d§f§d§b` to the end of your server's description by changing the `server.properties` file.  
+This change is invisible to the client and won't change the appearance of your server's description *in most cases*.
+
+If the server is discovered again in the future, it will be automatically excluded **and removed from the database**.
+
+More information can be found [here](./guides/hiding-server.mdx).
+
+---
+
+:::note[Ethical Notice]
+
+ServerRawler respects server owners' choices.  
+Servers that opt out are permanently excluded from future scans  
+and removed from the database.  
+The authors are not responsible for any misuse of this tool.
+
+:::
+
+
+---
+
+## License
+
+This project is licensed under the [GNU GPL-3 License](https://github.com/Cyberdolfi/ServerRawler/blob/main/LICENSE).
+
+---
+
+## Contributing
+
+* Found a bug? -> [Create an issue](https://github.com/Cyberdolfi/ServerRawler/issues)
+* Have ideas or suggestions? -> Join my [Discord](https://discord.gg/vbZ2FKyjMN "Discord")
+* Want to contribute code? -> [Fork the repository](https://github.com/Cyberdolfi/ServerRawler/fork)
+
+We use(ed):
+- [Docusaurus](https://docusaurus.io/) for the documentation framework
+- [Shields.io](https://shields.io/) for the badges
+- [Pterodactyl](https://pterodactyl.io/) for the inspiration of the documentation design
+- [Copilot](https://copilot.github.com/) to make this documentation better (But it's still reviewed by me)
+- [Rust](https://www.rust-lang.org/) for the programming language
+- [MySQL](https://www.mysql.com/) for the database system
+- [JetBrains](https://www.jetbrains.com/) for the IDEs
+- [Visual Studio Code](https://code.visualstudio.com/) for editing some files
+- [GitHub](https://github.com/) for the version control system
+- [Git](https://git-scm.com/) for the version control system
+- [Discord](https://discord.com/) for the community platform
+- [Minecraft](https://minecraft.net/) & [PaperMC](https://papermc.io/) for testing servers
+- And many more...
+
+
+Thanks to the Contributors:
+- [@Cyberdolfi](https://github.com/Cyberdolfi) - Main developer (Owner)

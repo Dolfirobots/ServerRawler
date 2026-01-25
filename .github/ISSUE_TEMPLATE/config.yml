@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: "Read our FAQ"
+    url: "https://cyberdolfi.github.io/ServerRawler/docs/FAQ"
+    about: "Before opening a new issue, please check the FAQ for answers to common questions."
+  - name: "Join our Discord Server"
+    url: "https://discord.gg/vbZ2FKyjMN"
+    about: "If you're having trouble with your configuration, ask for help on our Discord server!"
+  - name: "Read our Documentation"
+    url: "https://cyberdolfi.github.io/ServerRawler/"
+    about: "Read the docs about installing, configuring and more"

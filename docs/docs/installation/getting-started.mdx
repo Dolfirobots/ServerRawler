@@ -1,0 +1,114 @@
+---
+sidebar_position: 1
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+
+# Getting started
+
+Welcome to the ServerRawler installation guide!
+
+:::danger[Important Notice]
+
+This guide is just a base for an example of the installation process.  
+Please wait until the first stable release.
+
+:::
+
+
+## Prerequisites
+
+You are expected to understand how to read documentation to use this project.  
+We have spent many hours detailing how to install or upgrade our software, so please  
+take some time and read rather than copy and pasting and then complaining when things do not work.  
+It's always better to read the current step to the end before executing any commands.
+
+:::warning[Operating Systems]
+
+Not every operating system is officially supported.  
+The following operating systems have been tested and are known to work well or not work well with ServerRawler:
+
+:::
+
+| Operating System |  Version  | Supported |
+|------------------|-----------|-----------|
+| Ubuntu           | 24.04 LTS | ✅        |
+
+It's possible that ServerRawler works on other operating systems as well, but they haven't been tested yet.  
+You are welcome to try it out and report your findings in the [Discord server](https://discord.gg/vbZ2FKyjMN).
+
+## Dependencies
+
+- [MySQL](https://dev.mysql.com/downloads/) (for database storage)
+
+If you want to compile ServerRawler from source, you will also need:
+
+- [Git](https://git-scm.com/downloads) (to clone the repository)
+- [Rust](https://www.rust-lang.org/tools/install) (to build the project)
+- A C/C++ compiler (like `build-essential`)
+
+### Example Dependency Installation
+
+<Tabs
+  defaultValue="ubuntu"
+  values={[
+    {label: 'Ubuntu/Debian', value: 'ubuntu'},
+    {label: 'Windows', value: 'windows'},
+  ]}
+  groupId="operating-systems"
+  queryString="os">
+    <TabItem value="ubuntu" label="Ubuntu/Debian">
+        User installation:  
+        If you already have a MySQL server installed, you can skip this step.
+        ```bash title="User"
+        sudo apt update
+        sudo apt install -y mysql-server
+        ```
+
+        Developer installation:  
+        For more clear information about installing rust, go to https://www.rust-lang.org/tools/install.
+        ```bash title="Developer"
+        sudo apt update
+        sudo apt install -y git curl mysql-server # basic dependencies
+        sudo apt install -y build-essential rustup # install build tools and rust
+
+        # Install rust via rustup
+        rustup install stable
+        ```
+    </TabItem>
+</Tabs>
+
+## Download Files
+The first step in this process is to create the folder where the ServerRawler  
+will live and then move ourselves into that newly created folder.  
+Below is an example of how to set the project up.
+
+Download the latest release from the [GitHub releases page](https://github.com/Cyberdolfi/ServerRawler/releases/latest)
+
+<Tabs
+  defaultValue="ubuntu"
+  values={[
+    {label: 'Ubuntu/Debian', value: 'ubuntu'},
+    {label: 'Windows', value: 'windows'},
+  ]}
+  groupId="operating-systems"
+  queryString="os">
+    <TabItem value="ubuntu" label="Ubuntu/Debian">
+        Users can download the latest release with wget:
+
+        ```bash title="User"
+        mkdir ServerRawler
+        cd ServerRawler
+        curl -o serverrawler.tar.gz https://github.com/Cyberdolfi/ServerRawler/releases/latest/download/serverrawler.tar.gz
+        ```
+
+        Developers can clone the repository instead:
+
+        ```bash title="Developer"
+        git clone https://github.com/Cyberdolfi/ServerRawler.git
+        cd ServerRawler
+        ```
+    </TabItem>
+</Tabs>
