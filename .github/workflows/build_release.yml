@@ -30,7 +30,7 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      - name: Install MUSL Tools (nur für Linux)
+      - name: Install MUSL Tools (only for linux)
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get install -y musl-tools
 
