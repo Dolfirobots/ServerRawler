@@ -4,7 +4,7 @@ use tokio::time::timeout;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use serde_json::Value;
 
-use crate::minecraft::utils::{write_varint, read_varint, prepend_length, Handshake, MinecraftPacket};
+use crate::minecraft::utils::{write_varint, read_varint, prepend_length, Handshake, MinecraftPacket, parse_legacy, parse_plain};
 use crate::minecraft::{Ping, LightPlayer, Mod, ModLoader};
 
 pub async fn execute_ping(ip: String, port: u16, protocol: i32, timeout_dur: Duration) -> Result<Ping, String> {
@@ -42,7 +42,7 @@ pub async fn execute_ping(ip: String, port: u16, protocol: i32, timeout_dur: Dur
         let packet_id = read_varint(&mut stream).await?;
 
         if packet_id != 0x00 {
-            return Err(format!("Wrong Packet ID: {}", packet_id));
+            return Err(format!("Unknown Packet ID: {}", packet_id));
         }
 
         let json_len = read_varint(&mut stream).await?;
@@ -69,6 +69,10 @@ fn parse_response(buf: Vec<u8>, latency: f32) -> Result<Ping, String> {
 
     let players = v.get("players");
     let version = v.get("version");
+
+    let raw_description = v.get("description").map(|d| d.to_string()).unwrap_or_default();
+    let legacy = parse_legacy(&raw_description);
+    let plain = parse_plain(&legacy);
 
     let (mods, detected_loader) = parse_mods(&v);
 
@@ -104,16 +108,9 @@ fn parse_response(buf: Vec<u8>, latency: f32) -> Result<Ping, String> {
             })
         }),
 
-        description: Some(v.get("description").map(|d| d.to_string()).unwrap_or_default()),
-        description_legacy: None, // TODO: Maybe parse it here or parse it in the user requests
-        description_plain: v.get("description")
-            .and_then(
-                |d| d.as_str().map(
-                    |s| s.to_string()
-                ).or_else(
-                    || d.get("text").and_then(|t| t.as_str()).map(|s| s.to_string())
-                )
-            ),
+        description: Some(raw_description),
+        description_legacy: Some(legacy),
+        description_plain: Some(plain),
 
         favicon: v.get("favicon").and_then(|f| f.as_str()).map(|s| s.to_string()),
         enforces_secure_chat: v.get("enforcesSecureChat").and_then(|s| s.as_bool()),
