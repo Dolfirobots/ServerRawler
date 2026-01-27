@@ -64,17 +64,6 @@ der versucht, so viele Server wie möglich zu finden.
 
 ---
 
-## 🚫 Wie du verhindern kannst, dass dein Server gescannt wird
-
-### Verwendung der Beschreibung:
-Du kannst `§b§d§f§d§b` am Ende der Serverbeschreibung hinzufügen, indem du die Datei `server.properties` änderst.
-Diese Änderung ist für den Client unsichtbar und verändert das Aussehen der Serverbeschreibung *in den meisten Fällen* nicht.
-Wenn der Server erneut entdeckt gescannt wurde, wird er automatisch übersprungen **und aus der Datenbank entfernt**.
-
-Weitere Informationen findest du in der [**Dokumentation**](https://cyberdolfi.github.io/ServerRawler/).
-
----
-
 ## 📥 Installation
 > Installationsanweisungen werden bald im Wiki verfügbar sein.
 
