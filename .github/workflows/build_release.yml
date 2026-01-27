@@ -45,13 +45,12 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            BIN_PATH=$(find target/${{ matrix.target }}/release -maxdepth 1 -name "*.exe" | head -n 1)
+            find target/${{ matrix.target }}/release/ -maxdepth 1 -name "*.exe" -exec cp {} ./${{ matrix.artifact_name }} \;
           else
-            BIN_PATH=$(find target/${{ matrix.target }}/release -maxdepth 1 -type f ! -name "*.*" | head -n 1)
+            find target/${{ matrix.target }}/release/ -maxdepth 1 -type f ! -name "*.*" -exec cp {} ./${{ matrix.artifact_name }} \;
           fi
           
-          echo "Found binary: $BIN_PATH"
-          cp "$BIN_PATH" ./${{ matrix.artifact_name }}
+          ls -lh ./${{ matrix.artifact_name }}
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
