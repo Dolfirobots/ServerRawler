@@ -26,14 +26,23 @@ jobs:
         with:
           profile: minimal
 
-      - name: Build release
-        run: cargo build --release
+      - name: Install MUSL target (Linux)
+        if: runner.os == 'Linux'
+        run: rustup target add x86_64-unknown-linux-musl
 
-      - name: Prepare artifact (Linux)
+      - name: Build release (Linux MUSL)
+        if: runner.os == 'Linux'
+        run: cargo build --release --target x86_64-unknown-linux-musl
+
+      - name: Prepare artifact (Linux MUSL)
         if: runner.os == 'Linux'
         run: |
-          mkdir dist
-          cp target/release/ServerRawler dist/ServerRawler-linux
+          mkdir -p dist
+          cp target/x86_64-unknown-linux-musl/release/ServerRawler dist/ServerRawler-linux-musl
+
+      - name: Build release (Windows)
+        if: runner.os == 'Windows'
+        run: cargo build --release
 
       - name: Prepare artifact (Windows)
         if: runner.os == 'Windows'
