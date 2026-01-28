@@ -63,8 +63,12 @@ jobs:
       - name: Build Binary
         run: |
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            export CROSS_CONTAINER_ENV_AWS_LC_SYS_NO_ASM=1
+            export CROSS_CONTAINER_ENV_AWS_LC_SYS_NO_GCC_INTERNAL_ERROR_CHECK=1
+          
             export AWS_LC_SYS_NO_ASM=1
             export AWS_LC_SYS_NO_GCC_INTERNAL_ERROR_CHECK=1
+          
             cross build --release --target ${{ matrix.target }}
           else
             cargo build --release --target ${{ matrix.target }}
@@ -102,7 +106,6 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          # Wenn manuell getriggert und Tag-Input vorhanden, nutze diesen, sonst den aktuellen Ref-Namen
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
           files: artifacts/**/*
           prerelease: false
