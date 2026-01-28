@@ -97,6 +97,6 @@ jobs:
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
           files: artifacts/**/*
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
