@@ -58,7 +58,7 @@ async fn main() -> Result<()> {
             if current_semver == latest_semver {
                 logger::info(format!("Current version: {} v{} {}", prefix, version_str, "<- Up to date".hex("#696969"))).send().await;
             } else if current_semver > latest_semver {
-                logger::info(format!("Current version: {} v{} {}", prefix, version_str, "<- Ahead/Dev".hex("#A020F0"))).send().await;
+                logger::info(format!("Current version: {} v{} {}", prefix, version_str, "<- Ahead".hex("#A020F0"))).send().await;
             } else {
                 let behind = github.get_behind(&current_raw).await.unwrap_or(1);
                 logger::warning(format!(
