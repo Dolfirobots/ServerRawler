@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Git tag'
+        required: true
 
 permissions:
   contents: write
@@ -21,11 +25,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          profile: minimal
 
       - name: Install MUSL target (Linux)
         if: runner.os == 'Linux'
