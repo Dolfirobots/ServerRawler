@@ -105,7 +105,7 @@ jobs:
           # Wenn manuell getriggert und Tag-Input vorhanden, nutze diesen, sonst den aktuellen Ref-Namen
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
           files: artifacts/**/*
-          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+          prerelease: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
