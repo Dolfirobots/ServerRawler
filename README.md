@@ -25,11 +25,10 @@
 
 > [!IMPORTANT]
 > This project is currently in early alpha!
-> The first beta release is coming soon...
 
 ---
 
-The **ServerRawler** by Cyberdolfi is a Minecraft server scanner (or crawler – however you want to call it),  
+The **ServerRawler** by Cyberdolfi is a Minecraft server crawler,  
 that tries to find as many servers as it can.
 
 ---
@@ -39,21 +38,23 @@ that tries to find as many servers as it can.
 - 📝 Supported protocols:
   - Minecraft **Ping** protocol
   - Minecraft **Query** protocol
-  - Minecraft **Join** protocol
+  - Minecraft **Join** protocol *(In development)*
 - 🔷 Control and monitoring via Discord bot
 - 🔥 Easy to install and configure
 - 💾 Saves data in a MySQL database
 
 ## ⏳ Planned
-- 💾 SQLite support
+- 💾 PostgreSQL support
+- 📟 Minecraft **Join** protocol
+- ➕ More features
+- 📃 Web API
 - 🛜 Proxy support
-- 🟢 Stable release
 
 ---
 
 ### 📑 What data does it save?
 - MotD
-- Max./Online players
+- Max/Online players
 - Online players (with **Username** and **UUID**)
 - Plugins
 - Mods
