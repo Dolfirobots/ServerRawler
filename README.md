@@ -53,7 +53,7 @@ that tries to find as many servers as it can.
 ---
 
 ### 📑 What data does it save?
-- MotD
+- Description
 - Max/Online players
 - Online players (with **Username** and **UUID**)
 - Plugins
