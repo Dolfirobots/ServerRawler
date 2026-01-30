@@ -39,16 +39,18 @@ that tries to find as many servers as it can.
   - Minecraft **Ping** protocol
   - Minecraft **Query** protocol
   - Minecraft **Join** protocol *(In development)*
-- 🔷 Control and monitoring via Discord bot
 - 🔥 Easy to install and configure
-- 💾 Saves data in a MySQL database
+- 🖼️ Base64 to image converter
+- 📋 Fast IPv4 generator with CIDR feature
 
 ## ⏳ Planned
 - 💾 PostgreSQL support
+- 📃 Rewrite documentation
 - 📟 Minecraft **Join** protocol
-- ➕ More features
 - 📃 Web API
+- 🔷 Control and monitoring via Discord bot
 - 🛜 Proxy support
+- ➕ More features
 
 ---
 
@@ -56,6 +58,7 @@ that tries to find as many servers as it can.
 - Description
 - Max/Online players
 - Online players (with **Username** and **UUID**)
+- "Enforce Secure Chat" state
 - Plugins
 - Mods
 - Online mode
