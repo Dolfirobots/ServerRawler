@@ -443,7 +443,6 @@ impl App {
 
                             manager::TaskManager::spawn("Ping", move |_, _| async move {
                                 match crate::minecraft::ping::execute_ping(ip, port, 767, Duration::from_secs(5)).await {
-                                    // Hier .send().await ergänzen
                                     Ok(res) => {
                                         logger::success(format!("Ping: {}ms", res.latency)).send().await;
                                     },
@@ -451,8 +450,6 @@ impl App {
                                         logger::error(format!("Fehler: {}", e)).send().await;
                                     },
                                 }
-                                // Der Block gibt jetzt implizit () zurück, weil das Match-Statement
-                                // durch .send().await abgeschlossen wurde.
                             }).await;
                         });
                     },
