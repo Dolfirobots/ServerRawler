@@ -60,6 +60,7 @@ that tries to find as many servers as it can.
 - Online players (with **Username** and **UUID**)
 - "Enforce Secure Chat" state
 - Plugins
+- Mod loader
 - Mods
 - Online mode
 - Whitelist (only when the server is cracked)
