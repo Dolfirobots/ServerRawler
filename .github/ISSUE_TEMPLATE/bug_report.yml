@@ -64,7 +64,7 @@ body:
       placeholder: |
         Console logs:
         [12:15:33] [ERROR   ] Something went wrong: ...
-        [12:15:34] [CRIT    ] Another log entry
+        [12:15:34] [CRIT    ] ...another log entry...
         [12:16:02] [WARNING ] ...
       value:
       render: shell
@@ -73,7 +73,7 @@ body:
     id: screenshots
     attributes:
       label: "Screenshots or screen recordings"
-      description: "Drag and drop in below any screenshots or screen recordings you’ve made which show the problem."
+      description: "Drag and drop in below any screenshots or screen recordings you've made which show the problem."
 
   - type: input
     id: tool-version
@@ -98,6 +98,6 @@ body:
     id: will-patch
     attributes:
       label: "Contribute a patch?"
-      description: "If you plan to contribute a patch for this issue yourself, please check the box below — to tell us and others looking at the issue that someone’s already working on it."
+      description: "If you plan to contribute a patch for this issue yourself, please check the box below — to tell us and others looking at the issue that someone's already working on it."
       options:
         - label: "I'll contribute a patch for this myself."
