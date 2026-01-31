@@ -86,8 +86,8 @@ pub struct IpGeneratorBuilder {
 }
 
 impl IpGeneratorBuilder {
-    pub fn cidr(mut self, ip: &str, prefix: u8) -> Self {
-        self.network = Some(ip.parse().expect("Invalid IP-Address"));
+    pub fn cidr(mut self, ip: Ipv4Addr, prefix: u8) -> Self {
+        self.network = Some(ip);
         self.prefix_len = Some(prefix);
         self
     }
@@ -119,4 +119,21 @@ impl IpGeneratorBuilder {
             use_cidr,
         }
     }
+}
+
+pub fn parse_cidr(cidr_str: &str) -> Result<(Ipv4Addr, u8), String> {
+    let (ip_part, prefix_part) = cidr_str.split_once('/')
+        .ok_or_else(|| "Missing '/' in CIDR (Format: IP/Prefix)".to_string())?;
+
+    let ip: Ipv4Addr = ip_part.parse()
+        .map_err(|_| format!("Invalid IP address: {}", ip_part))?;
+
+    let prefix: u8 = prefix_part.parse()
+        .map_err(|_| format!("Invalid Prefix: {}", prefix_part))?;
+
+    if prefix > 32 {
+        return Err("Prefix must be between 0 and 32".to_string());
+    }
+
+    Ok((ip, prefix))
 }
