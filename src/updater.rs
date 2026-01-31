@@ -18,10 +18,10 @@ pub struct GithubVersion {
 }
 
 impl GithubAPI {
-    pub fn new(user: String, repo: String) -> Self {
+    pub fn new(user: &str, repo: &str) -> Self {
         Self {
-            user,
-            repo,
+            user: user.to_string(),
+            repo: repo.to_string(),
             agent: "Rust Github Checker".to_string(),
             client: Client::new(),
         }
@@ -93,8 +93,8 @@ impl GithubAPI {
     }
 
 
-    pub fn set_agent(mut self, agent: String) -> Self {
-        self.agent = agent;
+    pub fn set_agent(mut self, agent: &str) -> Self {
+        self.agent = agent.to_string();
         self
     }
 }
