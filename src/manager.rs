@@ -56,25 +56,24 @@ impl TaskManager {
 
     pub async fn stop_all() {
         let manager = Self::global();
-        let mut tasks = manager.tasks.write().await;
+        let tasks = manager.tasks.write().await;
 
         for (_, task) in tasks.iter() {
             task.cancel_token.cancel();
         }
-
-        tasks.clear();
     }
 
-    pub async fn force_stop_all() {
-        let manager = Self::global();
-        let mut tasks = manager.tasks.write().await;
-
-        for (id, task) in tasks.drain() {
-            task.handle.abort();
-
-            logger::warning(format!("Aborted task {}", id)).send().await;
-        }
-    }
+    // I have the exit(), so I don't need that
+    // pub async fn force_stop_all() {
+    //     let manager = Self::global();
+    //     let mut tasks = manager.tasks.write().await;
+    //
+    //     for (id, task) in tasks.drain() {
+    //         task.handle.abort();
+    //
+    //         logger::warning(format!("Aborted task {}", id)).send().await;
+    //     }
+    // }
 
     pub async fn has_tasks() -> bool {
         let manager = Self::global();
