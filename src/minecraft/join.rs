@@ -1,10 +1,7 @@
 use std::time::Duration;
 use tokio::net::TcpStream;
-use tokio::io::{AsyncWriteExt, AsyncReadExt};
+use tokio::io::AsyncWriteExt;
 use tokio::time::timeout;
-use flate2::read::ZlibDecoder;
-use std::io::Read;
-use uuid::uuid;
 use crate::minecraft::Join;
 use crate::minecraft::utils::{Handshake, write_varint, read_varint, prepend_length, MinecraftPacket, encode_string, encode_uuid};
 
