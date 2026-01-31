@@ -5,11 +5,11 @@ pub mod ping;
 pub mod join;
 pub mod utils;
 
-// Database Server data
+// Database Server
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerInfo {
-    pub server_id: i32,
+    pub server_id: i32, // Key
     pub server_ip: String,
     pub server_port: u16,
 
@@ -22,10 +22,12 @@ pub struct ServerInfo {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ServerHistory {
-    pub history_id: i64,
-    pub server_id: i32,
+    // Database stuff
+    pub history_id: i64, // Key
+    pub server_id: i32, // Key
     pub seen: i64,
 
+    // Ping
     pub description: String,
     pub plain_description: String,
     pub icon: Option<String>,
@@ -39,27 +41,33 @@ pub struct ServerHistory {
 
     pub enforces_secure_chat: Option<bool>,
 
-    pub is_mod_server: bool,
+    pub is_modded_server: bool,
     pub mods: Option<Vec<Mod>>,
     pub mod_loader: Option<ModLoader>,
 
+    // Query
     pub players: Vec<LightPlayer>,
-    pub default_world: String,
     pub plugins: Vec<Plugin>,
 
-    pub kick_message: Option<String>,
+    pub query_players_max: Option<i32>,
+    pub query_players_online: Option<i32>,
 
+    pub software: Software,
+
+    // Join
+    pub kick_message: Option<String>,
     pub cracked: Option<bool>,
     pub whitelist: Option<bool>,
 
+    // Util
     pub latency: f32,
 }
 
-// Database Player data
+// Database Player
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Player {
-    pub uuid: String,
+    pub uuid: String, // Key
     pub username: String,
 
     pub discovered: i64,
@@ -68,15 +76,17 @@ pub struct Player {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlayerHistory {
-    pub history_id: i64,
-    pub uuid: String,
+    pub history_id: i64, // Key
+    pub uuid: String, // Key
+    pub username: String,
 
     pub server_id: i32,
     pub seen: i64
 }
 
-// Output methods
+// Protocol outputs
 
+#[derive(Clone)]
 pub struct Ping {
     pub protocol_version: Option<i32>,
     pub version_name: Option<String>,
@@ -101,7 +111,10 @@ pub struct Ping {
 }
 
 pub struct Query {
-    pub software: String,
+    pub players_online: Option<i32>,
+    pub players_max: Option<i32>,
+
+    pub software: Software,
     pub plugins: Vec<Plugin>,
     pub players: Vec<LightPlayer>,
 }
@@ -113,6 +126,12 @@ pub struct Join {
 }
 
 // Helpers
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct Software {
+    pub name: String,
+    pub version: String
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum ModLoader {
@@ -127,8 +146,8 @@ pub enum ModLoader {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LightPlayer {
-    pub uuid: String,
-    pub name: String,
+    pub uuid: Option<String>,
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
