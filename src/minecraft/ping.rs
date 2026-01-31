@@ -99,10 +99,10 @@ fn parse_response(buf: Vec<u8>, latency: f32) -> Result<Ping, String> {
 
         player_sample: players.and_then(|p| p.get("sample")).and_then(|s| {
             s.as_array().map(|arr| {
-                arr.iter().filter_map(|p| {
+                arr.iter().filter_map(|player| {
                     Some(LightPlayer {
-                        name: p.get("name")?.as_str()?.to_string(),
-                        uuid: p.get("id")?.as_str()?.to_string(),
+                        name: Some(player.get("name")?.as_str()?.to_string()),
+                        uuid: Some(player.get("id")?.as_str()?.to_string()),
                     })
                 }).collect()
             })
