@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Cyberdolfi/ServerRawler/refs/heads/main/docs/static/img/logo.png" width="200">
+  <img src="https://raw.githubusercontent.com/Cyberdolfi/ServerRawler/refs/heads/main/docs/static/img/logo.png" width="200" alt="Logo">
   <h1>ServerRawler</h1>
   <p>A high-performance Minecraft server scanner written in Rust</p>
 </div>
