@@ -1,9 +1,12 @@
+use std::collections::HashMap;
 use std::time::Duration;
+use serde::Deserialize;
 use tokio::net::UdpSocket;
 use tokio::time::timeout;
-use crate::minecraft::{Query, Plugin, LightPlayer};
+use crate::manager::TaskManager;
+use crate::minecraft::{Query, Plugin, LightPlayer, Software};
 
-pub async fn execute_query(ip: &str, port: u16, timeout_dur: Duration) -> Result<Query, String> {
+pub async fn execute_query(ip: &str, port: u16, timeout_dur: Duration, with_uuids: bool) -> Result<Query, String> {
     let address = format!("{}:{}", ip, port);
     let socket = UdpSocket::bind("0.0.0.0:0").await.map_err(|e| e.to_string())?;
     socket.connect(&address).await.map_err(|e| e.to_string())?;
@@ -37,44 +40,91 @@ pub async fn execute_query(ip: &str, port: u16, timeout_dur: Duration) -> Result
         .map_err(|_| "Query Stat Timeout")?
         .map_err(|e| e.to_string())?;
 
-    parse_query_response(&buf[11..n])
+    parse_query_response(&buf[11..n], with_uuids).await
 }
 
-fn parse_query_response(data: &[u8]) -> Result<Query, String> {
-    let mut parts = data.split(|&b| b == 0x00);
-    let mut software = "Unknown".to_string();
-    let mut plugins_raw = String::new();
+pub async fn parse_query_response(data: &[u8], with_uuids: bool) -> Result<Query, String> {
+    let parts: Vec<String> = data
+        .split(|&b| b == 0x00)
+        .map(|bytes| String::from_utf8_lossy(bytes).to_string())
+        .collect();
 
-    while let (Some(key), Some(value)) = (parts.next(), parts.next()) {
-        if key.is_empty() {
-            break;
+    let mut kv_stats = HashMap::new();
+    let mut i = 0;
+
+    while i + 1 < parts.len() && !parts[i].is_empty() {
+        kv_stats.insert(parts[i].clone(), parts[i + 1].clone());
+        i += 2;
+    }
+
+    while i < parts.len() && !parts[i].contains("player_") {
+        i += 1;
+    }
+    i += 2;
+
+    let mut player_names = Vec::new();
+    while i < parts.len() {
+        if !parts[i].is_empty() {
+            player_names.push(parts[i].clone());
         }
-
-        let key_str = String::from_utf8_lossy(key);
-        let val_str = String::from_utf8_lossy(value).to_string();
-
-        match key_str.as_ref() {
-            "server_mod" | "plugins" => plugins_raw = val_str,
-            "version" | "software" => software = val_str,
-            _ => {}
-        }
+        i += 1;
     }
 
     let mut players = Vec::new();
-    while let Some(player_name_raw) = parts.next() {
-        if player_name_raw.is_empty() { continue; }
-        let name = String::from_utf8_lossy(player_name_raw).to_string();
-        players.push(
-            LightPlayer {
-                name,
-                uuid: "".to_string() // TODO: Make real UUID
+    let client = reqwest::Client::new();
+
+    for name in player_names {
+        let mut uuid = None;
+
+        if with_uuids {
+            let url = format!("https://api.mojang.com/users/profiles/minecraft/{}", name);
+            if let Ok(resp) = client.get(url).send().await {
+                if let Ok(profile) = resp.json::<MojangProfile>().await {
+                    uuid = Some(profile.id);
+                }
             }
-        );
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+
+        players.push(LightPlayer {
+            name: Some(name),
+            uuid,
+        });
     }
 
+    let mut raw_software_str = "Vanilla".to_string();
+    let mut plugins = Vec::new();
+
+    if let Some(raw_plugins) = kv_stats.get("plugins") {
+        if !raw_plugins.is_empty() {
+            let split_parts: Vec<&str> = raw_plugins.splitn(2, ':').collect();
+            raw_software_str = split_parts[0].trim().to_string();
+            if split_parts.len() > 1 {
+                plugins = parse_plugin_string(raw_plugins);
+            }
+        }
+    }
+
+    let mut software_name = raw_software_str.clone();
+    let mut software_version = kv_stats.get("version").cloned().unwrap_or_default();
+
+    if raw_software_str.contains(" on ") {
+        let split_on: Vec<&str> = raw_software_str.splitn(2, " on ").collect();
+        software_name = split_on[0].to_string();
+        software_version = split_on[1].to_string();
+    }
+
+    let players_online = kv_stats.get("numplayers").and_then(|s| s.parse::<i32>().ok());
+    let players_max = kv_stats.get("maxplayers").and_then(|s| s.parse::<i32>().ok());
+
     Ok(Query {
-        software,
-        plugins: parse_plugin_string(&plugins_raw),
+        players_online,
+        players_max,
+        software: Software {
+            name: software_name,
+            version: software_version,
+        },
+        plugins,
         players,
     })
 }
@@ -101,4 +151,12 @@ fn parse_plugin_string(raw: &str) -> Vec<Plugin> {
             }
         })
         .collect()
+}
+
+// Structs
+
+#[derive(Deserialize)]
+struct MojangProfile {
+    id: String,
+    // name: String,
 }
