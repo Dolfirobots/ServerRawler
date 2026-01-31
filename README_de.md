@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Cyberdolfi/ServerRawler/refs/heads/main/docs/static/img/logo.png" width="200">
+  <img src="https://raw.githubusercontent.com/Cyberdolfi/ServerRawler/refs/heads/main/docs/static/img/logo.png" width="200" alt="Logo">
   <h1>ServerRawler</h1>
-  <p>Ein leistungsstarker Minecraft Server Scanner, geschrieben in Rust</p>
+  <p>Ein leistungsstarker Minecraft Server Seeker in Rust</p>
 </div>
 
 ---
@@ -19,53 +19,63 @@
 ---
 
 > [!NOTE]
-> Sprachen:  
-> [**[🇩🇪] *Deutsch***](README_de.md)  
+> Languages:  
+> [**[🇩🇪] *Deutsch***](./README_de.md)  
 > [**[🇬🇧] English**](./README.md)
 
 > [!IMPORTANT]
-> Dieses Projekt befindet sich derzeit in einer frühen Alpha-Phase!  
-> Die erste Beta-Version erscheint bald...
+> Dieses Projekt befindet sich derzeit in einer frühen Alpha-Phase!
 
 ---
 
-Der **ServerRawler** von Cyberdolfi ist ein Minecraft Server Scanner (oder Crawler – wie auch immer man es nennen möchte),  
+Der **ServerRawler** von Cyberdolfi ist ein Minecraft-Server-Crawler,
+
 der versucht, so viele Server wie möglich zu finden.
 
 ---
 
 ## ✨ Features
-- ⏰ Für hohe Performance und Geschwindigkeit optimiert
+
+- ⏰ Optimiert für maximale Performance
 - 📝 Unterstützte Protokolle:
-    - Minecraft **Ping** Protokoll
-    - Minecraft **Query** Protokoll
-    - Minecraft **Join** Protokoll
-- 🔷 Steuerung und Überwachung über einen Discord-Bot
-- 🔥 Einfache Installation und Konfiguration
-- 💾 Speicherung der Daten in einer MySQL-Datenbank
+  - Minecraft **Ping** Protokoll
+  - Minecraft **Query** Protokoll
+  - Minecraft **Join** Protokoll *(In Entwicklung)*
+- 🔥 Einfach zu installieren und konfigurieren
+- 🖼️ Base64-zu-Bild Konverter
+- 📋 Schneller IPv4-Generator mit CIDR Feature
 
 ## ⏳ Geplant
-- 💾 SQLite Unterstützung
-- 🛜 Proxy
-- 🟢 Release-Version
+
+- 💾 PostgreSQL-Unterstützung
+- 📃 Überarbeitung der Dokumentation
+- 📟 Minecraft **Join** Protokoll
+- 📃 Web-API
+- 🔷 Steuerung und Monitoring via Discord-Bot
+- 🛜 Proxy-Unterstützung
+- ➕ Weitere Funktionen
 
 ---
 
 ### 📑 Welche Daten werden gespeichert?
-- MotD
-- Maximale / aktuelle Spieleranzahl
+
+- Beschreibung
+- Maximale/Online-Spieler
 - Online-Spieler (mit **Benutzername** und **UUID**)
+- "Enforce Secure Chat" Status
 - Plugins
+- Mod-Loader
 - Mods
 - Online-Modus
-- Whitelist (nur wenn der Server cracked ist)
-- Server-Version und -Software
+- Whitelist (nur wenn der Server "Cracked" ist)
+- Server-Version und Software
 - ... und vieles mehr!
 
 ---
 
 ## 📥 Installation
-> Installationsanweisungen werden bald im Wiki verfügbar sein.
+
+Die Installations-Anweisungen findest du in der **[Dokumentation](https://cyberdolfi.github.io/ServerRawler/)**.
 
 ---
 
@@ -77,11 +87,11 @@ Dieses Projekt ist unter der [GPL-3.0 Lizenz](./LICENSE) lizenziert.
 
 ## 🤝 Mitwirken
 
-* Bug gefunden? -> [Issue erstellen](https://github.com/Cyberdolfi/ServerRawler/issues)
-* Ideen oder Vorschläge? -> Joine mein [Discord](https://discord.gg/4wHFzBjDTY "Discord")
-* Mächtest Updates selbst schreiben? -> [Forke diese Repository](https://github.com/Cyberdolfi/ServerRawler/fork)
+* Einen Bug gefunden? → [Erstelle ein Issue](https://github.com/Cyberdolfi/ServerRawler/issues)
+* Ideen oder Vorschläge? → Komm auf meinen [Discord](https://discord.gg/4wHFzBjDTY)
+* Code Ändern? → [Fork das Repository](https://github.com/Cyberdolfi/ServerRawler/fork)
 
 ---
 
 > [!WARNING]
-> Die Autoren übernehmen keine Verantwortung für den Missbrauch dieses Tools.
+> Die Autoren sind nicht verantwortlich für jeglichen Missbrauch dieses Tools.
