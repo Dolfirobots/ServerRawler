@@ -9,7 +9,8 @@ static MIN_LEVEL: OnceLock<LogLevel> = OnceLock::new();
 pub enum DefaultColor {
     Gray,
     LightGray,
-    Orange,
+    Highlight,
+    DarkHighlight,
     LimeGreen,
 }
 
@@ -18,7 +19,8 @@ impl DefaultColor {
         match self {
             DefaultColor::Gray => "#696969",
             DefaultColor::LightGray => "#919191",
-            DefaultColor::Orange => "#FF4500",
+            DefaultColor::Highlight => "#FF4500",
+            DefaultColor::DarkHighlight => "#cd3700",
             DefaultColor::LimeGreen => "#32cd32",
         }
     }
