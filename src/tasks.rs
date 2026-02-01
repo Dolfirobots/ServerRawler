@@ -97,7 +97,7 @@ pub async fn crawl(cidr: Option<(Ipv4Addr, u8)>, max_tasks: u32, ip_count: u32) 
                             let mut output = String::new();
                             output.push_str(
                                 &format!(
-                                    "Found server: {}:{}",
+                                    "Found server: {}:{}\n",
                                     ip_str.hex(DefaultColor::Highlight.hex()),
                                     port.hex(DefaultColor::Highlight.hex())
                                 )
