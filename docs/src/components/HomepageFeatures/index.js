@@ -25,7 +25,7 @@ const FeatureList = [
   },
   {
     title: 'Discord integratation',
-    Svg: require('@site/static/img/discord_logo.svg').default,
+    image: require('@site/static/img/api_banner.png').default,
     description: (
       <>
         You can simple acces the ServerRawler with a Discord bot
