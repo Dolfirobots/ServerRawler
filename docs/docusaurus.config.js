@@ -11,8 +11,8 @@ import {themes as prismThemes} from 'prism-react-renderer';
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'ServerRawler',
-  tagline: 'A Minecraft server crawler, written in Rust',
-  favicon: 'img/favicon.png',
+  tagline: 'A high-performance Minecraft server crawler written in Rust.',
+  favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -22,10 +22,9 @@ const config = {
   url: 'https://cyberdolfi.github.io',
   baseUrl: '/ServerRawler/',
 
+  // GitHub pages deployment config.
   organizationName: 'Cyberdolfi',
   projectName: 'ServerRawler',
-
-  deploymentBranch: 'gh-pages',
 
   onBrokenLinks: 'throw',
 
@@ -40,12 +39,13 @@ const config = {
   presets: [
     [
       'classic',
+      /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
           sidebarPath: './sidebars.js',
-          editUrl:'https://github.com/Cyberdolfi/ServerRawler/blob/main/docs/',
+          editUrl:
+            'https://github.com/Cyberdolfi/ServerRawler/tree/main/docs/',
         },
-        blog: false,
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -54,36 +54,26 @@ const config = {
   ],
 
   themeConfig:
+    /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      image: 'img/logo.png',
-
-      docs: {
-        sidebar: {
-          hideable: true,
-          autoCollapseCategories: true,
-        },
-      },
-
+      //image: '',
       colorMode: {
         defaultMode: 'dark',
-        disableSwitch: false,
-        respectPrefersColorScheme: true,
+        disableSwitch: true,
+        respectPrefersColorScheme: false,
       },
-
       navbar: {
         title: 'ServerRawler',
-
         logo: {
-          alt: 'Logo',
+          alt: 'ServerRawler Logo',
           src: 'img/logo.png',
         },
-
         items: [
           {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
-            label: 'Documentation',
+            label: 'Docs',
           },
           {
             href: 'https://github.com/Cyberdolfi/ServerRawler',
@@ -92,49 +82,50 @@ const config = {
           },
         ],
       },
-
       footer: {
         style: 'dark',
         links: [
           {
-            title: 'Documentations',
+            title: 'Docs',
             items: [
-              {
-                label: 'Tutorial',
-                to: '/docs/intro',
-              },
+              { label: 'Introduction', to: '/docs/intro' },
+              { label: 'Installation', to: '/docs/getting-started/installation' },
+              { label: 'Configuration', to: '/docs/getting-started/configuration' },
+              { label: 'Database Setup', to: '/docs/getting-started/database-setup' },
+              { label: 'Usage', to: '/docs/usage' },
+              { label: 'API', to: '/docs/api' },
             ],
           },
           {
-            title: 'Community',
+            title: 'Community & Social',
             items: [
-              {
-                label: 'Discord',
-                href: 'https://discord.gg/FcWaApSbep',
-              },
-              {
-                label: 'YouTube',
-                href: 'https://www.youtube.com/@Cyberdolfi',
-              },
+              { label: 'GitHub', href: 'https://github.com/Cyberdolfi/ServerRawler' },
+              { label: 'Discord', href: 'https://discord.gg/4wHFzBjDTY' },
             ],
           },
           {
-            title: 'More',
+            title: 'Project',
             items: [
-              {
-                label: 'GitHub',
-                href: 'https://github.com/Cyberdolfi/ServerRawler',
-              },
+              { label: 'Features', to: '/docs/features' },
+              { label: 'Contributing', to: '/docs/contributing' },
+              { label: 'License', href: 'https://github.com/Cyberdolfi/ServerRawler/blob/main/LICENSE' },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} <a href="https://github.com/Cyberdolfi/ServerRawler" target="_blank" rel="noopener noreferrer">ServerRawler</a>. Built with <a href="https://docusaurus.io" target="_blank" rel="noopener noreferrer">Docusaurus</a>.<div style="text-align:center; margin-top:8px; font-size:0.9em; opacity:0.85;">Not affiliated with Mojang (Minecraft). <a href="https://www.minecraft.net" target="_blank" rel="noopener noreferrer">Minecraft</a> is a trademark of Mojang Studios.</div>`,
+        copyright: `Crafted by Cyberdolfi. Built with Docusaurus. Copyright © ${new Date().getFullYear()} ServerRawler.`,
       },
 
       prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
-        additionalLanguages: ['bash'],
+        additionalLanguages: ['powershell', 'toml', 'rust', 'bash'],
+        magicComments: [
+          {
+            className: 'code-block-error-line',
+            line: '@(error)',
+            block: {start: '@(error-start)', end: '@(error-end)'},
+          },
+        ],
       },
     }),
 };
