@@ -1,0 +1,58 @@
+---
+sidebar_position: 3
+title: Database Setup
+---
+
+# Database Setup (PostgreSQL)
+
+ServerRawler stores all collected server data in a **PostgreSQL** database. This guide will walk you through setting up your database and configuring ServerRawler to connect to it.
+
+:::info
+While `config.toml` is the primary method for configuration, understanding how to prepare your PostgreSQL instance is crucial.
+:::
+
+## 1. Prerequisites
+
+Before configuring ServerRawler, ensure you have:
+
+* **PostgreSQL Installed and Running:** You need a PostgreSQL server instance accessible from where ServerRawler will run.
+* **Database User:** A PostgreSQL user with privileges to create databases and tables.
+* **Database Name:** A dedicated database for ServerRawler (e.g., `server_rawler_db`).
+
+If you need help installing PostgreSQL, refer to the [official PostgreSQL documentation](https://www.postgresql.org/docs/current/installation.html) for your operating system.
+
+## 2. Create the Database and User
+
+You can typically create a user and database using the `psql` command-line tool.
+
+```bash
+# Connect to PostgreSQL as a superuser (e.g., postgres)
+psql -U postgres
+
+# Create a dedicated user for ServerRawler (replace with your desired username and password)
+CREATE USER server_rawler_user WITH PASSWORD 'your_strong_password';
+
+# Create the database
+CREATE DATABASE server_rawler_db OWNER server_rawler_user;
+
+# Grant all privileges on the database to the new user
+GRANT ALL PRIVILEGES ON DATABASE server_rawler_db TO server_rawler_user;
+
+# Exit psql
+\q
+```
+
+## 3. Configure ServerRawler for Database Connection
+
+ServerRawler can connect to your PostgreSQL database using either a `config.toml` file.
+Use the [Configuration Guide](./configuration?configstyle=stepbystep#database-section) to set up your database connection details.
+
+## 4. Database Migrations
+
+ServerRawler automatically apply necessary database schema changes upon startup. When you run ServerRawler, it will check for and apply any pending migrations found in the `./migrations` directory.
+
+:::tip
+Ensure your database user has sufficient permissions to create and alter tables for migrations to succeed.
+:::
+
+With your database set up and configured, ServerRawler is ready to store and manage the valuable data it collects!

@@ -1,0 +1,164 @@
+---
+sidebar_position: 1
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Installation
+
+ServerRawler offers two primary installation methods: downloading pre-compiled binaries for immediate use or building from source for developers.
+
+<Tabs queryString="method">
+    <TabItem value="binaries" label="Download Binaries (Recommended)" default>
+        ## Method 1: Download Pre-compiled Binaries (Recommended)
+
+        The easiest way to get started with ServerRawler is to download a pre-compiled executable for your operating system from the GitHub Releases page. This method does not require you to have Rust installed.
+
+        <Tabs queryString="os">
+            <TabItem value="linux" label="Linux" default>
+                1. **Go to GitHub Releases:** Visit the [ServerRawler Releases page](https://github.com/Cyberdolfi/ServerRawler/releases).
+                2. **Download the latest release:** Find the latest stable release and download the Linux executable (e.g. `serverrawler-linux-amd64`).
+                3. **Make it executable:** After downloading, ensure the file has executable permissions. You can do this by running:
+
+                ```bash
+                chmod +x serverrawler-linux-amd64
+                ```
+
+                4. **Create directory (optional):** You can create a new directory for ServerRawler to keep things organized:
+
+                ```bash
+                # Create directory
+                mkdir ServerRawler
+                # Move the downloaded executable into the directory
+                mv serverrawler-linux-amd64 ServerRawler/
+                # Go into the directory
+                cd ServerRawler
+                # Rename the executable for easier access
+                mv serverrawler-linux-amd64 serverrawler
+                ```
+
+                5. **Add to PATH (optional):** For easier access, you might want to add the directory containing the executable to your system's PATH.
+
+                ```bash
+                sudo mv serverrawler-linux-amd64 /usr/local/bin/serverrawler
+                ```
+
+                6. **Test:** Now, you can test the executable by running it in your terminal or command prompt:
+
+                ```bash
+                serverrawler --help
+                ```
+
+                or if you didn't set it in PATH:
+
+                ```bash
+                ./serverrawler --help
+                ```
+            </TabItem>
+            <TabItem value="windows" label="Windows">
+                1. **Go to GitHub Releases:** Visit the [ServerRawler Releases page](https://github.com/Cyberdolfi/ServerRawler/releases).
+                2. **Download the latest release:** Find the latest stable release and download the Windows executable (e.g., `serverrawler-windows-amd64.exe`).
+                3. **Create directory (optional):** You can create a new directory for ServerRawler to keep things organized:
+
+                ```shell
+                # Create directory
+                mkdir ServerRawler
+                # Move the downloaded executable into the directory
+                mv serverrawler-windows-amd64.exe ServerRawler/
+                # Go into the directory
+                cd ServerRawler
+                # Rename the executable for easier access
+                ren serverrawler-windows-amd64.exe serverrawler.exe
+                ```
+
+                4. **Add to PATH (optional):** For easier access, you might want to add the executable to your system's PATH.
+
+                ```shell
+                setx PATH "%PATH%;C:\path\to\ServerRawler" 
+                ```
+
+                5. **Test:** Now, you can test the executable by running it in your terminal or command prompt:
+
+                ```shell
+                serverrawler --help
+                ```
+
+                or if you didn't set it in PATH:
+
+                ```shell
+                ./serverrawler.exe --help
+                ```
+            </TabItem>
+            <TabItem value="macos" label="macOS">
+                1. **Go to GitHub Releases:** Visit the [ServerRawler Releases page](https://github.com/Cyberdolfi/ServerRawler/releases).
+                2. **Download the latest release:** Find the latest stable release and download the macOS executable (e.g. `serverrawler-macos-amd64`).
+                3. **Make it executable:** After downloading, ensure the file has executable permissions. You can do this by running:
+
+                ```bash
+                chmod +x serverrawler-macos-amd64
+                ```
+
+                4. **Create directory (optional):** You can create a new directory for ServerRawler to keep things organized:
+
+                ```bash
+                # Create directory
+                mkdir ServerRawler
+                # Move the downloaded executable into the directory
+                mv serverrawler-macos-amd64 ServerRawler/
+                # Go into the directory
+                cd ServerRawler
+                # Rename the executable for easier access
+                mv serverrawler-macos-amd64 serverrawler
+                ```
+
+                5. **Test:** Now, you can test the executable by running it in your terminal or command prompt:
+
+                ```bash
+                ./serverrawler --help
+                ```
+            </TabItem>
+        </Tabs>
+    </TabItem>
+    <TabItem value="source" label="Build from Source">
+        ## Method 2: Build from Source
+
+        If you wish to contribute to ServerRawler, modify its code, or prefer building from source, you'll need the Rust toolchain installed.
+
+        ### 1. Install Rust
+
+        If you don't have Rust installed, than is here an example of installing it using `rustup`:
+
+        ```bash
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+        ```
+
+        For more information and alternative installation methods, refer to the [official Rust installation guide](https://www.rust-lang.org/tools/install).
+
+        ### 2. Clone the Repository
+
+        Clone the ServerRawler repository from GitHub to your local machine:
+
+        ```bash
+        git clone https://github.com/Cyberdolfi/ServerRawler.git
+        cd ServerRawler
+        ```
+
+        ### 3. Build the Project
+
+        Build the project in release mode for the best performance. This command will compile the source code and create the executable.
+
+        ```bash
+        cargo build --release
+        ```
+
+        The executable will be available at `target/release/ServerRawler`.
+    </TabItem>
+</Tabs>
+
+## Next Steps: Configuration and Database Setup
+
+Regardless of your installation method, the next step is to configure ServerRawler for operation, especially setting up your database connection.
+
+* **[Configuration Guide](./configuration)**: Proceed to the configuration guide to learn how to set up your `config.toml` file and prepare your PostgreSQL database.
+* **[Database Setup](./database-setup)**: ServerRawler requires a PostgreSQL database to store collected server data. Ensure you have a PostgreSQL instance running and its connection details (host, port, user, password, database name).
