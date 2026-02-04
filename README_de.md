@@ -52,7 +52,7 @@ der versucht, so viele Server wie möglich zu finden.
 - 📟 Minecraft **Join** Protokoll
 - 📃 Web-API
 - 🔷 Steuerung und Monitoring via Discord-Bot
-- 🛜 Proxy-Unterstützung
+- 🌍 Geolokation
 - ➕ Weitere Funktionen
 
 ---

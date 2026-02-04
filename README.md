@@ -49,7 +49,7 @@ that tries to find as many servers as it can.
 - 📟 Minecraft **Join** protocol
 - 📃 Web API
 - 🔷 Control and monitoring via Discord bot
-- 🛜 Proxy support
+- 🌍 Geolocation
 - ➕ More features
 
 ---
