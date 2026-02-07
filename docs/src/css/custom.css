@@ -49,12 +49,6 @@
   border-left: 3px solid #ff000080;
 }
 
-.navbar {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
 .hero {
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(8px);
@@ -167,12 +161,12 @@ a:hover,
 
 /* Custom Footer Styling */
 .footer {
-  background: rgba(0, 0, 0, 0.4); /* Slightly lighter than hero for contrast */
+  background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
-  border-top: 1px solid rgba(255, 255, 255, 0.1); /* Subtle separator */
-  padding-top: 30px; /* Increased padding */
-  padding-bottom: 20px; /* Adjusted padding */
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 30px; 
+  padding-bottom: 20px;
 }
 
 .footer__logo {
@@ -201,7 +195,7 @@ a:hover,
 }
 
 .footer__copyright {
-  color: #a0a0a0; /* Slightly desaturated for copyright */
+  color: #a0a0a0;
   font-size: 0.85em;
   margin-top: 30px; /* Space above copyright */
   text-align: center;
