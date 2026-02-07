@@ -121,6 +121,11 @@ const config = {
         additionalLanguages: ['powershell', 'toml', 'rust', 'bash'],
         magicComments: [
           {
+            className: 'theme-code-block-highlighted-line',
+            line: 'highlight-next-line',
+            block: {start: 'highlight-start', end: 'highlight-end'},
+          },
+          {
             className: 'code-block-error-line',
             line: '@(error)',
             block: {start: '@(error-start)', end: '@(error-end)'},
