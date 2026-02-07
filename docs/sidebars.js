@@ -19,7 +19,11 @@ const sidebars = {
     {
       type: 'category',
       label: 'Getting Started',
-      items: ['getting-started/installation', 'getting-started/configuration', 'getting-started/database-setup'],
+      items: [
+        'getting-started/installation',
+        'getting-started/database-setup',
+        'getting-started/configuration'
+      ],
     },
     {
       type: 'category',
