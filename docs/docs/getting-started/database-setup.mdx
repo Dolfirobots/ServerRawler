@@ -8,7 +8,7 @@ title: Database Setup
 ServerRawler stores all collected server data in a **PostgreSQL** database. This guide will walk you through setting up your database and configuring ServerRawler to connect to it.
 
 :::tip
-If you prefer to run ServerRawler without a database, you can skip this section and use the [`--no-database` argument](./usage/arguments/no-database).
+If you prefer to run ServerRawler without a database, you can skip this section and use the [`--no-database` argument](../usage/arguments/no-database).
 :::
 
 :::info[Why PostgreSQL?]
@@ -52,4 +52,4 @@ GRANT ALL PRIVILEGES ON DATABASE serverrawler_db TO serverrawler_usr;
 ## 3. Configure ServerRawler for Database Connection
 
 The next step is now, to edit the `config.toml` file.
-Use the [Configuration Guide](./getting-started/configuration?configstyle=stepbystep#database-section) to set up your database connection details.
+Use the [Configuration Guide](./configuration?configstyle=stepbystep#database-section) to set up your database connection details.
