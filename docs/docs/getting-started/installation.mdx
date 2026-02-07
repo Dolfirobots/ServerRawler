@@ -148,17 +148,22 @@ ServerRawler offers two primary installation methods: downloading pre-compiled b
 
         Build the project in release mode for the best performance. This command will compile the source code and create the executable.
 
+        :::info
+        Building from source can take a few minutes, especially on the first run, as it needs to compile all dependencies.
+        :::
+
         ```bash
         cargo build --release
         ```
 
-        The executable will be available at `target/release/ServerRawler`.
+        The executable will be available at `target/release/`.
     </TabItem>
 </Tabs>
 
 ## Next Steps: Configuration and Database Setup
 
-Regardless of your installation method, the next step is to configure ServerRawler for operation, especially setting up your database connection.
+Regardless of your installation method, the next step is to set up your database connection.
+If you prefer to run ServerRawler without a database, you can skip the database setup and use the [`--no-database` argument](./usage/arguments/no-database).
 
-* **[Configuration Guide](./configuration)**: Proceed to the configuration guide to learn how to set up your `config.toml` file and prepare your PostgreSQL database.
 * **[Database Setup](./database-setup)**: ServerRawler requires a PostgreSQL database to store collected server data. Ensure you have a PostgreSQL instance running and its connection details (host, port, user, password, database name).
+* **[Configuration Guide](./configuration)**: Proceed to the configuration guide to learn how to set up your `config.toml` file and prepare your PostgreSQL database.
