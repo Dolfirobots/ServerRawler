@@ -55,6 +55,8 @@ der versucht, so viele Server wie möglich zu finden.
 - 🌍 Geolokation
 - ➕ Weitere Funktionen
 
+Sehe im [Projekt](https://github.com/users/Cyberdolfi/projects/2) mehr
+
 ---
 
 ### 📑 Welche Daten werden gespeichert?

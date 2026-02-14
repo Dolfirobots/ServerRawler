@@ -52,6 +52,8 @@ that tries to find as many servers as it can.
 - 🌍 Geolocation
 - ➕ More features
 
+See more at the [project](https://github.com/users/Cyberdolfi/projects/2)
+
 ---
 
 ### 📑 What data does it save?
