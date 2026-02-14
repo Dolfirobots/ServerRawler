@@ -42,10 +42,9 @@ that tries to find as many servers as it can.
 - 🔥 Easy to install and configure
 - 🖼️ Base64 to image converter
 - 📋 Fast IPv4 generator with CIDR feature
+- 💾 PostgreSQL support
 
 ## ⏳ Planned
-- 💾 PostgreSQL support
-- 📃 Rewrite documentation
 - 📟 Minecraft **Join** protocol
 - 📃 Web API
 - 🔷 Control and monitoring via Discord bot

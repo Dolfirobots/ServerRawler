@@ -44,11 +44,10 @@ der versucht, so viele Server wie möglich zu finden.
 - 🔥 Einfach zu installieren und konfigurieren
 - 🖼️ Base64-zu-Bild Konverter
 - 📋 Schneller IPv4-Generator mit CIDR Feature
+- 💾 PostgreSQL-Unterstützung
 
 ## ⏳ Geplant
 
-- 💾 PostgreSQL-Unterstützung
-- 📃 Überarbeitung der Dokumentation
 - 📟 Minecraft **Join** Protokoll
 - 📃 Web-API
 - 🔷 Steuerung und Monitoring via Discord-Bot
