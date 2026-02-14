@@ -90,4 +90,4 @@ This project is licensed under the [GPL-3.0 License](./LICENSE).
 ---
 
 > [!WARNING]
-> The authors are not responsible for any misuse of this tool.
+> The authors are not responsible for any misuse of this tool or code.

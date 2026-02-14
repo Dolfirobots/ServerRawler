@@ -95,4 +95,4 @@ Dieses Projekt ist unter der [GPL-3.0 Lizenz](./LICENSE) lizenziert.
 ---
 
 > [!WARNING]
-> Die Autoren sind nicht verantwortlich für jeglichen Missbrauch dieses Tools.
+> Die Autoren sind nicht verantwortlich für jeglichen Missbrauch dieses Tools oder dem Code.
