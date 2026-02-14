@@ -8,7 +8,7 @@
 
 <div align="center">
   <a href="https://rust-lang.org/"><img src="https://img.shields.io/badge/rust-gray?style=for-the-badge&logo=rust&logoColor=orange" alt="Rust"/></a>
-  <a href="https://mysql.com/"><img src="https://img.shields.io/badge/mysql-gray?style=for-the-badge&logo=mysql&logoColor=orange" alt="MySQL"/></a>
+  <a href="https://postgresql.org/"><img src="https://img.shields.io/badge/postgresql-gray?style=for-the-badge&logo=postgresql&logoColor=orange" alt="MySQL"/></a>
   <a href="https://www.jetbrains.com/"><img src="https://img.shields.io/badge/jetbrains-gray?style=for-the-badge&logo=jetbrains&logoColor=orange" alt="JetBrains"/></a>
   <br>
   <a href="https://cyberdolfi.github.io/ServerRawler/"><img src="https://shields.io/badge/wiki-gray?style=for-the-badge&logo=readthedocs&logoColor=orange" alt="Wiki page"/></a>
