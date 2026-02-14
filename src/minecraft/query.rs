@@ -159,11 +159,8 @@ fn parse_plugin_string(raw: &str) -> Vec<Plugin> {
                     version: "Unknown".to_string()
                 }
             }
-        })
-        .collect()
+        }).collect()
 }
-
-// Structs
 
 #[derive(Deserialize)]
 struct MojangProfile {
