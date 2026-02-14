@@ -3,7 +3,6 @@ use std::time::Duration;
 use serde::Deserialize;
 use tokio::net::UdpSocket;
 use tokio::time::timeout;
-use crate::manager::TaskManager;
 use crate::minecraft::{Query, Plugin, LightPlayer, Software};
 
 // To understand this here I recommend to read https://minecraft.wiki/w/Query#Client_to_Server_Packet_Format
