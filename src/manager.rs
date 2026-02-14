@@ -4,9 +4,6 @@ use tokio::sync::RwLock;
 use std::collections::HashMap;
 use std::future::Future;
 use std::sync::{Arc, OnceLock};
-
-use crate::logger;
-
 pub struct Task {
     handle: JoinHandle<()>,
     cancel_token: CancellationToken,
@@ -62,18 +59,6 @@ impl TaskManager {
             task.cancel_token.cancel();
         }
     }
-
-    // I have the exit(), so I don't need that
-    // pub async fn force_stop_all() {
-    //     let manager = Self::global();
-    //     let mut tasks = manager.tasks.write().await;
-    //
-    //     for (id, task) in tasks.drain() {
-    //         task.handle.abort();
-    //
-    //         logger::warning(format!("Aborted task {}", id)).send().await;
-    //     }
-    // }
 
     pub async fn has_tasks() -> bool {
         let manager = Self::global();
