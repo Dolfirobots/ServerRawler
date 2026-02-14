@@ -6,18 +6,24 @@ use tokio::time::timeout;
 use crate::manager::TaskManager;
 use crate::minecraft::{Query, Plugin, LightPlayer, Software};
 
+// To understand this here I recommend to read https://minecraft.wiki/w/Query#Client_to_Server_Packet_Format
 pub async fn execute_query(ip: &str, port: u16, timeout_dur: Duration, with_uuids: bool) -> Result<Query, String> {
     let address = format!("{}:{}", ip, port);
     let socket = UdpSocket::bind("0.0.0.0:0").await.map_err(|e| e.to_string())?;
     socket.connect(&address).await.map_err(|e| e.to_string())?;
 
+    // Query handshake
     let session_id: i32 = 0x01010101; // Just a random ID
     let mut handshake_packet = Vec::new();
+    // Always must send: magic: 0xFE 0xFD
+    // Handshake state: 0x09
     handshake_packet.extend_from_slice(&[0xFE, 0xFD, 0x09]);
+    // Session ID
     handshake_packet.extend_from_slice(&session_id.to_be_bytes());
 
     socket.send(&handshake_packet).await.map_err(|e| e.to_string())?;
 
+    // Listen to response
     let mut buf = vec![0u8; 2048];
     let n = timeout(timeout_dur, socket.recv(&mut buf))
         .await
@@ -28,13 +34,17 @@ pub async fn execute_query(ip: &str, port: u16, timeout_dur: Duration, with_uuid
     let challenge_token: i32 = token_str.parse().map_err(|_| "Failed to parse Token")?;
 
     let mut stat_request = Vec::new();
+    // Always must send
     stat_request.extend_from_slice(&[0xFE, 0xFD, 0x00]);
+    // Session ID
     stat_request.extend_from_slice(&session_id.to_be_bytes());
+    // The token that was sent by server
     stat_request.extend_from_slice(&challenge_token.to_be_bytes());
     stat_request.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]);
 
     socket.send(&stat_request).await.map_err(|e| e.to_string())?;
 
+    // Receiving server response
     let n = timeout(timeout_dur, socket.recv(&mut buf))
         .await
         .map_err(|_| "Query Stat Timeout")?
@@ -56,7 +66,8 @@ pub async fn parse_query_response(data: &[u8], with_uuids: bool) -> Result<Query
         kv_stats.insert(parts[i].clone(), parts[i + 1].clone());
         i += 2;
     }
-
+    
+    // Parsing players
     while i < parts.len() && !parts[i].contains("player_") {
         i += 1;
     }
