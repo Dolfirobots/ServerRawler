@@ -1,22 +1,18 @@
-use std::io::SeekFrom;
 use std::net::Ipv4Addr;
 use std::sync::{Arc, OnceLock};
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 use colored_text::Colorize;
 use futures::StreamExt;
 use tokio::sync::Semaphore;
-use tokio::io::{AsyncBufReadExt, AsyncSeekExt, BufReader};
 use tokio::task::JoinSet;
-use tokio::time::Instant;
 use crate::logger;
 use crate::logger::DefaultColor;
 use crate::manager::TaskManager;
 use crate::minecraft::join::execute_join_check;
-use crate::minecraft::{Ping, Query};
 use crate::minecraft::ping::execute_ping;
 use crate::minecraft::query::execute_query;
 use crate::randomizer::{IpGenerator, IpType};
+use crate::scanning::utils::{prettier_ping_result, prettier_query_result};
 
 static NETWORK_SEMAPHORE: OnceLock<Arc<Semaphore>> = OnceLock::new();
 
