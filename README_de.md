@@ -89,9 +89,9 @@ Dieses Projekt ist unter der [GPL-3.0 Lizenz](./LICENSE) lizenziert.
 
 ## 🤝 Mitwirken
 
-* Einen Bug gefunden? → [Erstelle ein Issue](https://github.com/Cyberdolfi/ServerRawler/issues)
-* Ideen oder Vorschläge? → Komm auf meinen [Discord](https://discord.gg/4wHFzBjDTY)
-* Code Ändern? → [Fork das Repository](https://github.com/Cyberdolfi/ServerRawler/fork)
+* Einen Bug gefunden? [Erstelle ein Issue](https://github.com/Cyberdolfi/ServerRawler/issues)
+* Ideen oder Vorschläge? Komm auf meinen [Discord](https://discord.gg/4wHFzBjDTY)
+* Code Änderungen? [Fork das Repository](https://github.com/Cyberdolfi/ServerRawler/fork)
 
 ---
 
