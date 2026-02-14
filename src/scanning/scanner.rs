@@ -1,0 +1,79 @@
+use std::sync::Arc;
+use futures::{stream, Stream, StreamExt};
+use std::time::Duration;
+use crate::minecraft;
+use crate::minecraft::join::execute_join_check;
+use crate::minecraft::ping::execute_ping;
+use crate::minecraft::query::execute_query;
+
+pub struct ScanConfig {
+    query_timeout: Duration,
+    ping_timeout: Duration,
+    join_timeout: Duration,
+
+    with_uuid: bool,
+    do_query: bool,
+    do_join: bool,
+    max_tasks: u32
+}
+
+impl Default for ScanConfig {
+    fn default() -> Self {
+        Self {
+            query_timeout: Duration::from_secs(3),
+            ping_timeout: Duration::from_secs(3),
+            join_timeout: Duration::from_secs(3),
+
+            with_uuid: false,
+            do_query: false,
+            do_join: false,
+            max_tasks: 2000,
+        }
+    }
+}
+
+pub struct ScanResult {
+    pub ip: String,
+    pub port: u16,
+    pub ping: minecraft::Ping,
+    pub query: Option<minecraft::Query>,
+    pub join: Option<minecraft::Join>,
+}
+
+pub fn scan(targets: Vec<(String, u16)>, config: ScanConfig) -> impl Stream<Item = Option<ScanResult>> {
+    let max_tasks = config.max_tasks as usize;
+    let config_arc = Arc::new(config);
+
+    stream::iter(targets)
+        .map(move |(ip, port)| {
+            let cfg = config_arc.clone();
+
+            async move {
+                match execute_ping(ip.clone(), port, 767, cfg.ping_timeout).await {
+                    Ok(ping_res) => {
+                        let query = if cfg.do_query {
+                            execute_query(ip.as_str(), port, cfg.query_timeout, cfg.with_uuid).await.ok()
+                        } else {
+                            None
+                        };
+
+                        let join = if cfg.do_join {
+                            execute_join_check(ip.clone(), port, cfg.join_timeout, "ServerRawler", ping_res.protocol_version.unwrap_or(767)).await.ok()
+                        } else {
+                            None
+                        };
+
+                        Some(ScanResult {
+                            ip,
+                            port,
+                            ping: ping_res,
+                            query,
+                            join,
+                        })
+                    }
+                    Err(_) => None,
+                }
+            }
+        })
+        .buffer_unordered(max_tasks)
+}
