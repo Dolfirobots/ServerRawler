@@ -27,3 +27,5 @@ Cargo.lock
 # Runner specified
 .env
 config.toml
+
+config/
