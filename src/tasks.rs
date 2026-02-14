@@ -16,7 +16,7 @@ use crate::scanning::utils::{prettier_ping_result, prettier_query_result};
 
 static NETWORK_SEMAPHORE: OnceLock<Arc<Semaphore>> = OnceLock::new();
 
-fn get_network_semaphore() -> Arc<Semaphore> {
+pub fn get_network_semaphore() -> Arc<Semaphore> {
     NETWORK_SEMAPHORE.get_or_init(|| Arc::new(Semaphore::new(2000))).clone()
 }
 
