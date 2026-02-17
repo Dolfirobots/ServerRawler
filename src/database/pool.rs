@@ -107,7 +107,7 @@ pub async fn load(config_path: Option<String>) {
         logger::warning(
             format!(
                 "Database has weak credentials! See {}",
-                "https://cyberdolfi.github.io/ServerRawler/docs/getting-started/configuration#database-section".hex(DefaultColor::Highlight.hex())
+                "https://cyberdolfi.github.io/ServerRawler/docs/configuration/database#weak-credentials-warning".hex(DefaultColor::Highlight.hex())
             )
         ).prefix("Security").send().await;
     }
