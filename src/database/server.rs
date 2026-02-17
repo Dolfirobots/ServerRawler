@@ -1,6 +1,5 @@
 use sqlx::{Postgres, Transaction};
-use crate::database::{pool, ServerHistory, ServerInfo};
-use crate::logger;
+use crate::database::{parse_players, pool, Player, PlayerHistory, ServerHistory, ServerInfo};
 
 pub async fn insert_servers(servers: Vec<(ServerInfo, ServerHistory)>) -> Result<(), sqlx::Error> {
     let pool = pool::get_pool();
