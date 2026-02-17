@@ -102,7 +102,6 @@ pub async fn scan_file(path: String) {
                             )
                         ).prefix("File Scanner").send().await
                     }
-                    found_batch.clear();
                 }
             }
 
