@@ -57,7 +57,8 @@ pub async fn scan_file(path: String) {
         let config = ScanConfig::default();
 
         let total_targets = targets.len();
-        let mut found = 0;
+        let mut found_batch: Vec<(ServerInfo, ServerHistory)> = Vec::new();
+        let mut total_found_count = 0;
 
         let mut processed_count = 0;
 
@@ -72,7 +73,10 @@ pub async fn scan_file(path: String) {
 
             // Success
             if let Some(result) = maybe_result {
-                found += 1;
+                let parsed = parse_server(result.ip.clone(), result.port, result.ping.clone(), result.query, result.join);
+                found_batch.push(parsed);
+                total_found_count += 1;
+
                 let mut output = String::new();
                 output.push_str(
                     &format!(
@@ -83,6 +87,17 @@ pub async fn scan_file(path: String) {
                 );
                 output.push_str(&prettier_ping_result(result.ping).await);
                 logger::success(output).prefix("File Scanner").send().await;
+
+                if found_batch.len() >= 50 {
+                    match database::server::insert_servers(found_batch.clone()).await {
+                        Err(e) => logger::error(
+                            format!("Failed to insert server to database: {}", e.hex(DefaultColor::Highlight.hex()))
+                        ).prefix("File Scanner").send().await,
+                        Ok(_) => logger::success("Saved all server to the database!".to_string())
+                            .prefix("File Scanner").send().await
+                    }
+                    found_batch.clear();
+                }
             }
 
             // Progress calc
@@ -106,6 +121,16 @@ pub async fn scan_file(path: String) {
             }
         }
 
+        if !found_batch.is_empty() {
+            match database::server::insert_servers(found_batch).await {
+                Err(e) => logger::error(
+                    format!("Failed to insert server to database: {}", e.hex(DefaultColor::Highlight.hex()))
+                ).prefix("File Scanner").send().await,
+                Ok(_) => logger::success("Saved all server to the database!".to_string())
+                    .prefix("File Scanner").send().await
+            }
+        }
+
         // Finished
         let elapsed_time = start_time.elapsed();
 
@@ -119,7 +144,7 @@ pub async fn scan_file(path: String) {
             format!(
                 "File scan completed in {}. Found {} servers from {} targets. ({}{})",
                 format_time(elapsed_time.as_secs()).hex(DefaultColor::Highlight.hex()),
-                found.hex(DefaultColor::Highlight.hex()),
+                total_found_count.hex(DefaultColor::Highlight.hex()),
                 total_targets.hex(DefaultColor::Highlight.hex()),
                 pps.round().hex(DefaultColor::Highlight.hex()),
                 "pps".hex(DefaultColor::DarkHighlight.hex())
