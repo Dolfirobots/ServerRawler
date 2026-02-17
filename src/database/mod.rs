@@ -98,3 +98,104 @@ pub fn parse_to_url(host: &str, port: u16, user: &str, password: Option<&str>, d
 
     Ok(url)
 }
+
+pub fn parse_server(ip: String, port: u16, ping: Ping, query: Option<Query>, join: Option<Join>) -> (ServerInfo, ServerHistory) {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as i64;
+
+    let info = ServerInfo {
+        server_id: None,
+        server_ip: ip,
+        server_port: port,
+        last_seen: now,
+        discovered: now,
+        bedrock: false,
+        country: None,
+    };
+
+    let history = ServerHistory {
+        history_id: None,
+        server_id: None,
+        seen: now,
+
+        description: ping.description_legacy.or(ping.description),
+        plain_description: ping.description_plain,
+        icon: ping.favicon,
+
+        player_online: ping.players_online,
+        player_max: ping.players_max,
+        player_sample: ping.player_sample,
+
+        version_name: ping.version_name,
+        version_protocol: ping.protocol_version,
+
+        enforces_secure_chat: ping.enforces_secure_chat,
+
+        is_modded_server: Some(ping.is_modded),
+        mods: ping.mods,
+        mod_loader: ping.mod_loader,
+
+        players: query.as_ref().map(|q| q.players.clone()),
+        plugins: query.as_ref().map(|q| q.plugins.clone()),
+        software: query.as_ref().map(|q| q.software.clone()),
+
+        kick_message: join.as_ref().and_then(|j| j.kick_message.clone()),
+        cracked: join.as_ref().map(|j| j.cracked),
+        whitelist: join.as_ref().map(|j| j.whitelist),
+
+        latency: Some(ping.latency),
+    };
+
+    (info, history)
+}
+
+pub fn parse_players(server_id: i32, server_history: &ServerHistory) -> Vec<(Player, PlayerHistory)> {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as i64;
+
+    let mut found_players: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+
+    if let Some(sample) = &server_history.player_sample {
+        for p in sample {
+            if let Some(uuid) = &p.uuid {
+                let name = p.name.clone().unwrap_or_else(|| "Unknown".to_string());
+                found_players.insert(uuid.clone(), name);
+            }
+        }
+    }
+
+    if let Some(players) = &server_history.players {
+        for p in players {
+            if let Some(uuid) = &p.uuid {
+                let name = p.name.clone().unwrap_or_else(|| "Unknown".to_string());
+                found_players.insert(uuid.clone(), name);
+            }
+        }
+    }
+
+    found_players
+        .into_iter()
+        .map(|(uuid, username)| {
+            let player = Player {
+                uuid: uuid.clone(),
+                username: username.clone(),
+                discovered: now,
+                last_seen: now,
+            };
+
+            let history = PlayerHistory {
+                history_id: None,
+                uuid,
+                username,
+                server_id,
+                seen: now,
+            };
+
+            (player, history)
+        })
+        .collect()
+}
