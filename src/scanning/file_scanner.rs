@@ -89,7 +89,9 @@ pub async fn scan_file(path: String) {
                 logger::success(output).prefix("File Scanner").send().await;
 
                 if found_batch.len() >= 50 {
-                    match database::server::insert_servers(found_batch.clone()).await {
+                    let batch_to_insert = std::mem::take(&mut found_batch);
+
+                    match database::server::insert_servers(&batch_to_insert).await {
                         Err(e) => logger::error(
                             format!("Failed to insert server to database: {}", e.hex(DefaultColor::Highlight.hex()))
                         ).prefix("File Scanner").send().await,
