@@ -35,6 +35,7 @@ impl Default for ScanConfig {
 pub struct ScanResult {
     pub ip: String,
     pub port: u16,
+
     pub ping: minecraft::Ping,
     pub query: Option<minecraft::Query>,
     pub join: Option<minecraft::Join>,
