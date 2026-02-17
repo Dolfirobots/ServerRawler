@@ -127,7 +127,7 @@ pub async fn scan_file(path: String) {
         }
 
         if !found_batch.is_empty() {
-            match database::server::insert_servers(found_batch).await {
+            match database::server::insert_servers(&found_batch).await {
                 Err(e) => logger::error(
                     format!("Failed to insert server to database: {}", e.hex(DefaultColor::Highlight.hex()))
                 ).prefix("File Scanner").send().await,
