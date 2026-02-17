@@ -1,7 +1,7 @@
 use sqlx::{Postgres, Transaction};
 use crate::database::{parse_players, pool, Player, PlayerHistory, ServerHistory, ServerInfo};
 
-pub async fn insert_servers(results: Vec<(ServerInfo, ServerHistory)>) -> Result<(), sqlx::Error> {
+pub async fn insert_servers(results: &Vec<(ServerInfo, ServerHistory)>) -> Result<(), sqlx::Error> {
     let pool = pool::get_pool();
 
     for chunk in results.chunks(100) {
@@ -64,14 +64,14 @@ pub async fn insert_servers(results: Vec<(ServerInfo, ServerHistory)>) -> Result
                 .await?;
 
             let players = parse_players(server_id, server_history);
-            insert_players(players, &mut tx).await?;
+            insert_players(&players, &mut tx).await?;
         }
         tx.commit().await?;
     }
     Ok(())
 }
 
-pub async fn insert_players(player_data: Vec<(Player, PlayerHistory)>, tx: &mut Transaction<'_, Postgres>) -> Result<(), sqlx::Error> {
+pub async fn insert_players(player_data: &Vec<(Player, PlayerHistory)>, tx: &mut Transaction<'_, Postgres>) -> Result<(), sqlx::Error> {
     for (player, history) in player_data {
         sqlx::query(
             r#"
