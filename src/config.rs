@@ -247,8 +247,7 @@ impl DatabaseConfig {
 
 pub fn init(root_path: Option<String>) -> Result<(), ProcessError> {
     let header = "# ServerRawler configuration file\n\
-                  # Github: https://github.com/Cyberdolfi/ServerRawler\n\
-                  # Read the docs here: https://cyberdolfi.github.io/ServerRawler/docs/getting-started/configuration\n\n";
+    # Github: https://github.com/Cyberdolfi/ServerRawler\n";
     let dir = root_path.map(PathBuf::from).unwrap_or_else(|| PathBuf::from(".").join("config"));
 
     if !dir.exists() {
@@ -261,14 +260,18 @@ pub fn init(root_path: Option<String>) -> Result<(), ProcessError> {
     if !config_file.exists() {
         let default_config = MainConfig::default();
         let toml_content = toml::to_string_pretty(&default_config).unwrap();
-        let final_content = format!("{}{}", header, toml_content);
+
+        let doc_link = "# Read the docs here: https://cyberdolfi.github.io/ServerRawler/docs/configuration/config";
+        let final_content = format!("{}{}{}", header, doc_link, toml_content);
         fs::write(config_file, final_content).map_err(Io)?;
     }
 
     if !db_file.exists() {
         let default_db = DatabaseConfig::default();
         let toml_content = toml::to_string_pretty(&default_db).unwrap();
-        let final_content = format!("{}{}", header, toml_content);
+
+        let doc_link = "# Read the docs here: https://cyberdolfi.github.io/ServerRawler/docs/configuration/database";
+        let final_content = format!("{}{}{}", header, doc_link, toml_content);
         fs::write(db_file, final_content).map_err(Io)?;
     }
 
