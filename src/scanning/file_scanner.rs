@@ -95,8 +95,12 @@ pub async fn scan_file(path: String) {
                         Err(e) => logger::error(
                             format!("Failed to insert server to database: {}", e.hex(DefaultColor::Highlight.hex()))
                         ).prefix("File Scanner").send().await,
-                        Ok(_) => logger::success("Saved all server to the database!".to_string())
-                            .prefix("File Scanner").send().await
+                        Ok(_) => logger::success(
+                            format!(
+                                "Saved {} servers to the database!",
+                                batch_to_insert.len().hex(DefaultColor::Highlight.hex())
+                            )
+                        ).prefix("File Scanner").send().await
                     }
                     found_batch.clear();
                 }
