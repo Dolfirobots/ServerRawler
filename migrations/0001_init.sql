@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS servers (
     discovered BIGINT NOT NULL,
 
     bedrock BOOLEAN NOT NULL,
-    country TEXT NOT NULL
+    country TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_servers_ip ON servers(server_ip);
@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS server_history (
     server_id INTEGER NOT NULL REFERENCES servers(server_id) ON DELETE CASCADE,
 
     seen BIGINT NOT NULL,
-    description TEXT NOT NULL,
-    plain_description TEXT NOT NULL,
+    description TEXT,
+    plain_description TEXT,
     icon TEXT,
 
     player_online INTEGER,
@@ -37,9 +37,9 @@ CREATE TABLE IF NOT EXISTS server_history (
     mods JSONB,
     mod_loader TEXT,
 
-    players JSONB NOT NULL,
-    plugins JSONB NOT NULL,
-    software JSONB NOT NULL,
+    players JSONB,
+    plugins JSONB,
+    software JSONB,
 
     kick_message TEXT,
     cracked BOOLEAN,
@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS players (
 CREATE TABLE IF NOT EXISTS player_history (
     history_id BIGSERIAL PRIMARY KEY,
     uuid TEXT NOT NULL REFERENCES players(uuid) ON DELETE CASCADE,
+    username TEXT NOT NULL,
 
     server_id INTEGER NOT NULL REFERENCES servers(server_id) ON DELETE CASCADE,
     seen BIGINT NOT NULL
