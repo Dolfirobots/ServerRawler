@@ -1,169 +1,24 @@
 ---
-sidebar_position: 3
-title: Configuration
+title: Setup Configurations
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
-# Configuration
-
-ServerRawler relies on a `config.toml` file to manage all settings in a file.
-Create a file named `config.toml` in the root directory of your project (or [use a custom path](#using-a-custom-configuration-file-path)).
-
-## Database
-
-ServerRawler is designed to store collected data in a PostgreSQL database. You'll need to provide your PostgreSQL connection details.
-[Setup database](./database-setup)
-
-:::tip
-Ensure your PostgreSQL database is running and accessible from where you run ServerRawler.
+:::info[Configuration System]
+ServerRawler uses a folder where all configuration files are stored. The folder is named `config`.
 :::
-
-
-<Tabs queryString="configstyle">
-  <TabItem value="stepbystep" label="Step by Step" default>
-    ## Step by Step Configuration
-    Here is a breakdown of the sections of the `config.toml` file:
-
-    ### Database Section
-    The `[database]` section contains the connection details for your PostgreSQL database. Fill in the `host`, `port`, `user`, `password`, and `database` fields with your database credentials.
-    ```toml showLineNumbers=5 title="config.toml"
-    [database]
-    # Database configuration
-
-    host = "localhost"
-    port = 5432
-    user = "postgres" # Don't use superuser in production
-    password = "your_strong_password"
-    database = "serverrawler"
-    ```
-
-    ### Crawler Section
-    The `[crawler]` section allows you to configure the crawling behavior, including how many IPs to process per iteration, the number of concurrent tasks, and the ports to scan.
-    ```toml showLineNumbers=14 title="config.toml"
-    [crawler]
-    # Configuration specific to the crawling operations.
-    # Number of IP addresses to generate and process per crawling iteration.
-    ips_per_iteration = 1000000
-
-    # Maximum concurrent tasks the crawler will execute.
-    # Use 0 to use the value max_tasks from [network].
-    max_tasks = 0
-
-    # Number of loops. Use 0 to run infinitly.
-    runs = 0
-
-    # Time in seconds to wait between each crawling iteration.
-    # Use 0 to disable the cooldown (maybe is this comment here useless).
-    time_between_runs = 0
-
-    # List of Minecraft server ports to scan.
-    ports = [25565]
-    ```
-
-    ### Scanner Section
-    The `[scanner]` section configures the scanning operations, including concurrent tasks and default ports to scan.
-    ```toml showLineNumbers=34 title="config.toml"
-    [scanner]
-    # Configuration specific to the scanning operations.
-
-    # Maximum concurrent tasks the scanner will execute.
-    # Use 0 to use the value max_tasks from [network].
-    max_tasks = 0
-
-    # List of Minecraft server ports to scan.
-    # The port in the IP list file will have the highst priority
-    # (This is called default btw.)
-    default_ports = [25565]
-    ```
-
-    ### Network Section
-    The `[network]` section defines the network connection settings, such as maximum concurrent tasks and connection timeout.
-    ```toml showLineNumbers=46 title="config.toml"
-    [network]
-    # Network connection configuration
-
-    # Maximum concurrent network tasks (e.g., pings, queries).
-    # Recommended values: 1000 - 5000.
-    # Value must be between 10 and 20000.
-    max_tasks = 2000
-
-    # Timeout in milliseconds for server connections.
-    # Value must be between 80 and 15000
-    timeout = 3000
-    ```
-  </TabItem>
-  <TabItem value="everything" label="Complete Example">
-    ## Complete Example
-
-    Here is a complete example of a `config.toml` file with both the `[database]` and `[crawler]` sections configured:
-
-    ```toml showLineNumbers title="config.toml"
-    # ServerRawler configuration file
-    # Github: https://github.com/Cyberdolfi/ServerRawler
-    # Read the docs here: https://cyberdolfi.github.io/ServerRawler/docs/getting-started/configuration
-
-    [database]
-    # Database configuration
-
-    host = "localhost"
-    port = 5432
-    user = "postgres" # Don't use superuser in production
-    password = "your_strong_password"
-    database = "serverrawler"
-
-    [crawler]
-    # Configuration specific to the crawling operations.
-
-    # Number of IP addresses to generate and process per crawling iteration.
-    ips_per_iteration = 1000000
-
-    # Maximum concurrent tasks the crawler will execute.
-    # Use 0 to use the value max_tasks from [network].
-    max_tasks = 0
-
-    # Number of loops. Use 0 to run infinitly.
-    runs = 0
-
-    # Time in seconds to wait between each crawling iteration.
-    # Use 0 to disable the cooldown (maybe is this comment here useless).
-    time_between_runs = 0
-
-    # List of Minecraft server ports to scan.
-    ports = [25565]
-
-    [scanner]
-    # Configuration specific to the scanning operations.
-
-    # Maximum concurrent tasks the scanner will execute.
-    # Use 0 to use the value max_tasks from [network].
-    max_tasks = 0
-
-    # List of Minecraft server ports to scan.
-    # The port in the IP list file will have the highst priority
-    # (This is called default btw.)
-    default_ports = [25565]
-
-    [network]
-    # Network connection configuration
-
-    # Maximum concurrent network tasks (e.g., pings, queries).
-    # Recommended values: 1000 - 5000.
-    # Value must be between 10 and 20000.
-    max_tasks = 2000
-
-    # Timeout in milliseconds for server connections.
-    # Value must be between 80 and 15000
-    timeout = 3000
-    ```
-  </TabItem>
-</Tabs>
 
 ## Using a Custom Configuration File path
 
-To instruct ServerRawler to use your custom `config.toml` file, specify its path using the [`--config`](../usage/arguments/config) command-line argument:
+To teach ServerRawler to use your custom `path/to/your/custom_config_folder` directory, specify its path using the [`--config` argument](../usage/arguments/config).
 
-```bash
-./ServerRawler --config /path/to/your/custom_config.toml
-```
+:::warning[Important]
+The path you specify with the `--config` argument is the directory wher the folder `config` is located, not the path to the configuration files itself.
+For example, if your configuration files are located in `path/to/your/custom_config_folder/config`, you should specify `--config path/to/your/custom_config_folder` as the argument.
+:::
+
+## Configuration Files
+ServerRawler uses two configuration files at the moment:
+- `config/`
+  - `config.toml`: This file contains the main configuration settings for the crawler and scanner. [Details here](../configuration/config).
+  - `database.toml`: This file contains the database connection details for PostgreSQL. [Details here](../configuration/database).
+
+Click on the links above to learn how to set up each configuration file correctly.

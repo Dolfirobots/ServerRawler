@@ -1,0 +1,55 @@
+---
+title: config.toml
+---
+
+# Main Configuration
+
+:::tip[Configuration System]
+ServerRawler uses a folder where all configuration files are stored. The folder is named `config`.
+:::
+
+If you run ServerRawler fist time, it will automatically create a `config.toml` file with default values in the root directory of your project.
+It should look like this:
+
+```toml title="config.toml" showLineNumbers
+# ServerRawler configuration file
+# Github: https://github.com/Cyberdolfi/ServerRawler
+# Read the docs here: https://cyberdolfi.github.io/ServerRawler/docs/configuration/config
+
+[crawler]
+ips_per_iteration = 1000000
+max_tasks = 0
+runs = 0
+time_between_runs = 0
+default_ports = [25565]
+
+[scanner]
+max_tasks = 0
+default_ports = [25565]
+
+[network]
+max_tasks = 2000
+timeout = 3000
+```
+
+Simply, fill in the correct values for your crawling and scanning needs and save the file.
+
+### Crawler Configuration
+- `ips_per_iteration` determines how many IP addresses the crawler will generate and process in each iteration.  
+- `max_tasks` sets the maximum number of concurrent tasks the crawler will execute. Setting it to 0 will use the value from the `[network]` section.  
+- `runs` specifies how many iterations the crawler will perform. Setting it to 0 will run the crawler indefinitely.  
+- `time_between_runs` defines the cooldown time in seconds between each crawling iteration. Setting it to 0 will disable the cooldown.  
+- `default_ports` is a list of Minecraft server ports that the crawler will scan by default.
+
+### Scanner Configuration
+- `max_tasks` sets the maximum number of concurrent tasks the scanner will execute. Setting it to 0 will use the value from the `[network]` section.  
+- `default_ports` is a list of Minecraft server ports that the scanner will scan by default.
+
+### Network Configuration
+- `max_tasks` defines the maximum number of concurrent network tasks (e.g., pings, queries). Recommended values are between 1000 and 5000, and the value must be between 10 and 20000.  
+- `timeout` sets the timeout in milliseconds for server connections. The value must be between 80 and 15000.
+
+### Using a Custom Configuration File Path
+
+By default, ServerRawler looks for the `config.toml` file in the root directory of your project.
+If you want to use a custom path for your configuration file, you can specify it using the [`--config` argument](../usage/arguments/config.md).
