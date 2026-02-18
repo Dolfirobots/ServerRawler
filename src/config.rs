@@ -108,7 +108,7 @@ pub struct ScannerConfig {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GeneralConfig {
-    pub max_network_tasks: u32,
+    pub max_network_tasks: u32, // TODO
     pub ping_timeout: u64,
     pub query_timeout: u64,
     pub join_timeout: u64,
