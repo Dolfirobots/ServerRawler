@@ -1,10 +1,11 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use colored_text::Colorize;
 use futures::StreamExt;
 use tokio::fs::File;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use crate::database::{parse_server, ServerHistory, ServerInfo};
 use crate::{database, logger};
+use crate::config::MainConfig;
 use crate::logger::DefaultColor;
 use crate::manager::TaskManager;
 use crate::scanning::scanner::{scan, ScanConfig};
@@ -53,8 +54,16 @@ pub async fn scan_file(path: String) {
             }
         }
 
-        // TODO: Add config options
-        let config = ScanConfig::default();
+        let main_cfg = MainConfig::get().expect("Config not loaded!");
+
+        let config = ScanConfig {
+            ping_timeout: Duration::from_millis(main_cfg.general.ping_timeout),
+            query_timeout: Duration::from_millis(main_cfg.general.query_timeout),
+            join_timeout: Duration::from_millis(main_cfg.general.join_timeout),
+            with_uuid: main_cfg.general.do_uuid_fetch,
+            max_tasks: main_cfg.get_scanner_tasks(),
+            ..ScanConfig::default()
+        };
 
         let total_targets = targets.len();
         let mut found_batch: Vec<(ServerInfo, ServerHistory)> = Vec::new();
@@ -90,7 +99,6 @@ pub async fn scan_file(path: String) {
 
                 if found_batch.len() >= 50 {
                     let batch_to_insert = std::mem::take(&mut found_batch);
-
                     save_server(&batch_to_insert).await;
                 }
             }
@@ -146,6 +154,7 @@ pub async fn save_server(results: &Vec<(ServerInfo, ServerHistory)>) {
     let use_db = crate::USE_DATABASE.get().map(|a| **a).unwrap_or(true);
 
     if !use_db {
+        logger::debug("Skipping database insert...".into()).prefix("Database").send().await;
         return;
     }
 
