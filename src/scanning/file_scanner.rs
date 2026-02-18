@@ -91,17 +91,7 @@ pub async fn scan_file(path: String) {
                 if found_batch.len() >= 50 {
                     let batch_to_insert = std::mem::take(&mut found_batch);
 
-                    match database::server::insert_servers(&batch_to_insert).await {
-                        Err(e) => logger::error(
-                            format!("Failed to insert server to database: {}", e.hex(DefaultColor::Highlight.hex()))
-                        ).prefix("File Scanner").send().await,
-                        Ok(_) => logger::success(
-                            format!(
-                                "Saved {} servers to the database!",
-                                batch_to_insert.len().hex(DefaultColor::Highlight.hex())
-                            )
-                        ).prefix("File Scanner").send().await
-                    }
+                    save_server(&batch_to_insert).await;
                 }
             }
 
@@ -127,17 +117,7 @@ pub async fn scan_file(path: String) {
         }
 
         if !found_batch.is_empty() {
-            match database::server::insert_servers(&found_batch).await {
-                Err(e) => logger::error(
-                    format!("Failed to insert server to database: {}", e.hex(DefaultColor::Highlight.hex()))
-                ).prefix("File Scanner").send().await,
-                Ok(_) => logger::success(
-                    format!(
-                        "Saved {} servers to the database!",
-                        found_batch.len().hex(DefaultColor::Highlight.hex())
-                    )
-                ).prefix("File Scanner").send().await
-            }
+            save_server(&found_batch).await;
         }
 
         // Finished
@@ -160,4 +140,24 @@ pub async fn scan_file(path: String) {
             )
         ).send().await;
     }).await;
+}
+
+pub async fn save_server(results: &Vec<(ServerInfo, ServerHistory)>) {
+    let use_db = crate::USE_DATABASE.get().map(|a| **a).unwrap_or(true);
+
+    if !use_db {
+        return;
+    }
+
+    match database::server::insert_servers(results).await {
+        Err(e) => logger::error(
+            format!("Failed to insert server to database: {}", e.hex(DefaultColor::Highlight.hex()))
+        ).prefix("File Scanner").send().await,
+        Ok(_) => logger::success(
+            format!(
+                "Saved {} servers to the database!",
+                results.len().hex(DefaultColor::Highlight.hex())
+            )
+        ).prefix("File Scanner").send().await
+    }
 }
