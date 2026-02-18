@@ -1,35 +1,40 @@
 ---
-sidebar_position: 9
+title: --cidr - Argument
 ---
 
-# `--cidr`
+# `--cidr` - Argument
 
-**Long**: `--cidr`
+- **Long**: `--cidr`
 
-Configures an IP range in CIDR (Classless Inter-Domain Routing) format to restrict the scope of IP generation (`--generate-ips`) or crawling (`--crawl`) operations. This allows focusing on specific networks or segments.
+## Description
 
-:::info
-CIDR notation specifies an IP address and a prefix length, indicating the number of bits in the IP address that represent the network prefix. For example, `192.168.1.0/24` covers all IP addresses from `192.168.1.0` to `192.168.1.255`.
+Configures an IP range in CIDR (Classless Inter-Domain Routing) format to restrict the scope of IP generation oprations. This allows focusing on specific networks or segments.
+
+:::info[What is CIDR?]
+CIDR (Classless Inter-Domain Routing) is a method for allocating IP addresses and routing Internet Protocol packets. It replaces the older system based on classes A, B, and C. CIDR notation is a compact representation of an IP address and its associated network mask. It consists of an IP address, followed by a slash (`/`), and then a number that indicates the length of the network prefix in bits. For example, `192.168.1.0/24` covers all IP addresses from `192.168.1.0` to `192.168.1.255`.
 :::
 
 ## Usage
 
 ```bash
-ServerRawler --cidr <IP_RANGE>
+./ServerRawler <Command> --cidr <IP_RANGE>
 ```
 
-*   `<IP_RANGE>`: The IP range in CIDR format (e.g., `192.168.1.0/24`, `10.0.0.0/8`).
+- `<Command>`: Any command that uses IP generation
+  - [`generate`](/usage/commands/generate.md)
+  - [`crawl`](/usage/commands/crawl.md)
+- `<IP_RANGE>`: The IP range in CIDR format (e.g., `192.168.1.0/24`, `10.0.0.0/8`).
 
 ## Examples
 
-To generate random IPs exclusively within the `172.16.0.0/16` range:
+To generate random IPs exclusively within the `1.1.1.0/16` range:
 
 ```bash
-ServerRawler --generate-ips private_network.txt 1000 --cidr 172.16.0.0/16
+./ServerRawler generate cloudflare_network.txt 1000 --cidr 1.1.1.0/16
 ```
 
 To start a crawling loop that only targets servers within the `8.8.8.0/29` range:
 
 ```bash
-ServerRawler --crawl --cidr 8.8.8.0/29
+./ServerRawler crawl --cidr 8.8.8.0/29
 ```

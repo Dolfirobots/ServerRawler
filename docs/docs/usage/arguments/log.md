@@ -1,22 +1,25 @@
 ---
-sidebar_position: 1
+title: --log - Argument
 ---
 
-# `--log`
+# `--log` - Argument
 
-**Short**: `-s`
+- **Short**: `-l`
+
+## Description
 
 Sets the minimum logging level threshold for console output. Messages with a level lower than the specified threshold will not be displayed.
+For example, if you set the log level to `Warning`, only messages with levels `Warning`, `Error`, and `Critical` will be shown, while `Debug`, `Info`, and `Success` messages will be hidden.
 
-:::info
-This argument controls the verbosity of ServerRawler's output, helping you focus on critical information or dive into detailed debugging.
+:::info[Hint]
+The plain messages currently are visible on every log level.
 :::
 
 ## Usage
 
 ```bash
 ServerRawler --log <LEVEL>
-ServerRawler -s <LEVEL>
+ServerRawler -l <LEVEL>
 ```
 
 ### Available Log Levels
@@ -35,17 +38,17 @@ The following log levels are available, ordered from least to most verbose:
 To display only `Info`, `Success`, `Warning`, `Error`, and `Critical` messages (default behavior):
 
 ```bash
-ServerRawler --log info
+./ServerRawler --log info
 ```
 
 To display all messages, including `Debug` (most verbose):
 
 ```bash
-ServerRawler -s debug
+./ServerRawler -l debug
 ```
 
 To only display `Error` and `Critical` messages:
 
 ```bash
-ServerRawler --log error
+./ServerRawler --log error
 ```

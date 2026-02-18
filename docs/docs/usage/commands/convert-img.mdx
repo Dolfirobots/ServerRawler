@@ -1,0 +1,42 @@
+---
+title: convert-img - Command
+---
+
+# `convert-img` - Command
+
+## Description
+
+Converts a Base64 encoded image string (often found in Minecraft server favicons as a Data URI) into a physical image file.
+This utility is useful for extracting and saving server icons.
+
+## Usage
+
+```bash
+./ServerRawler convert-img <FILE_PATH> <BASE64_STRING>
+```
+
+* `<FILE_PATH>`: The path where the image file should be saved (e.g., `favicon.png`). The file extension will determine the output format.
+* `<BASE64_STRING>`: The full Base64 encoded string.
+
+## Examples
+
+:::tip
+In some cases, its better to put the Base64 string in a variable to avoid issues with special characters in the terminal.  
+For example, in bash you can do:
+```bash
+BASE64_STRING="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+./ServerRawler convert-img favicon.png "$BASE64_STRING"
+```
+:::
+
+To convert a Base64 string to a PNG image:
+
+```bash
+./ServerRawler convert-img favicon.png "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+```
+
+To convert a Base64 string without the Data URI prefix:
+
+```bash
+./ServerRawler convert-img image.jpg "iVBORw0KGgoAAAANSUhEUgAA..."
+```

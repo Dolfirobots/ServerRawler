@@ -1,0 +1,44 @@
+---
+title: generate - Command
+---
+
+# `generate` - Command
+
+## Description
+
+Generates a specified amount of random IPv4 addresses and saves them to a text file.
+This is useful for creating custom lists of IPs to scan.
+The generated IPs can be public or restricted to a specific CIDR range using the [`--cidr` argument](../arguments/cidr).
+
+## Usage
+
+```bash
+./ServerRawler generate <FILE_PATH> [AMOUNT]
+```
+
+* `<FILE_PATH>`: The path to the file where the generated IP addresses will be saved, one per line.
+* `[AMOUNT]`: (Optional) The number of IPv4 addresses to generate. If unset, it defaults to `100,000`.
+
+:::tip
+Combine with the [`--cidr` argument](../arguments/cidr) to generate IPs within a specific range.
+:::
+
+## Examples
+
+To generate 100,000 random public IP addresses and save them to `targets.txt`:
+
+```bash
+./ServerRawler generate targets.txt
+```
+
+To generate 50,000 random public IP addresses and save them to `my_ips.txt`:
+
+```bash
+./ServerRawler generate my_ips.txt 50000
+```
+
+To generate 10,000 IP addresses within a specific CIDR range using the [`--cidr` argument](../arguments/cidr):
+
+```bash
+./ServerRawler generate cidr_ips.txt 10000 --cidr 192.168.1.0/24
+```

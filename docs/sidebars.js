@@ -27,6 +27,14 @@ const sidebars = {
     },
     {
       type: 'category',
+      label: 'Configuration',
+      items: [
+        'configuration/config',
+        'configuration/database',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Usage',
       link: {
         type: 'doc',
@@ -39,16 +47,21 @@ const sidebars = {
           items: [
             'usage/arguments/log',
             'usage/arguments/no-database',
-            'usage/arguments/max-network-tasks',
             'usage/arguments/config',
-            'usage/arguments/ping',
-            'usage/arguments/query',
-            'usage/arguments/join',
-            'usage/arguments/convert-image',
-            'usage/arguments/generate-ips',
             'usage/arguments/cidr',
-            'usage/arguments/crawl',
-            'usage/arguments/scan',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Commands',
+          items: [
+            'usage/commands/crawl',
+            'usage/commands/generate',
+            'usage/commands/scan',
+            'usage/commands/query',
+            'usage/commands/ping',
+            'usage/commands/join',
+            'usage/commands/convert-img',
           ],
         },
         'usage/examples',

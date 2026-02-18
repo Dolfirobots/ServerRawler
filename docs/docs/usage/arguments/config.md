@@ -1,38 +1,41 @@
 ---
-sidebar_position: 12
+title: --config - Argument
 ---
 
-# `--config`
+# `--config` - Argument
 
-**Short**: `-c`
+- **Short**: `-c`  
+- **Long**: `--config`
 
-**Long**: `--config`
+## Description
 
-Specifies the path to a custom configuration file (e.g., `config.toml`). This allows users to manage settings such as database connections and crawler parameters separately from environment variables or default settings.
+Specifies the path to custom configuration files for ServerRawler. This allows you to use your own configuration settings instead of the config/ folder in the root directory of your project. (Where you run ServerRawler from)
 
-:::info
-Using a dedicated configuration file is recommended for managing complex deployments or specific operational profiles.
+:::warning[Important]
+The path you specify with the `--config` argument is the directory where the folder `config` is located, not the path to the configuration files itself.
+For example, if your configuration files are located in `path/to/your/custom_config_folder/config`, you should specify `--config path/to/your/custom_config_folder` as the argument.
 :::
 
 ## Usage
 
 ```bash
-ServerRawler --config <PATH_TO_CONFIG_FILE>
-ServerRawler -c <PATH_TO_CONFIG_FILE>
+ServerRawler --config <PATH_TO_CONFIG_FOLDER>
+ServerRawler -c <PATH_TO_CONFIG_FOLDER>
 ```
 
-* `<PATH_TO_CONFIG_FILE>`: The absolute or relative path to your `config.toml` file.
+- `<PATH_TO_CONFIG_FOLDER>`: The absolute or relative path to your custom configuration folder.
+
 
 ## Examples
 
-To run ServerRawler using a configuration file named `my_custom_config.toml` located in the current directory:
+To run ServerRawler using a custom configuration folder located at `my_custom_config_folder` in the current directory:
 
 ```bash
-ServerRawler --config my_custom_config.toml
+./ServerRawler --config my_custom_config_folder
 ```
 
-To run ServerRawler with a configuration file located at a specific absolute path:
+To run ServerRawler with a configuration folder located at a specific absolute path:
 
 ```bash
-ServerRawler -c /etc/serverrawler/production.toml
+./ServerRawler -c /etc/serverrawler/production_config_folder
 ```

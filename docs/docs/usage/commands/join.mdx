@@ -1,0 +1,41 @@
+---
+title: join - Command
+---
+
+# `join` - Command
+
+## Description
+
+Simulates a player login to a Minecraft server to check authentication and whitelist status.
+This feature attempts to join the server and captures any kick messages, 
+which can indicate if a server is online-mode (requires Mojang authentication), cracked (offline-mode), or has a whitelist enabled.
+
+:::warning
+This feature is currently under active development.
+There are currently only some debug outputs.
+:::
+
+## Usage
+
+```bash
+./ServerRawler join <ADDRESS>
+```
+
+The `<ADDRESS>` should be in the format `<IP>[:PORT]`. If the port is unset, `25565` (the default Minecraft port) will be used.
+
+## Examples
+
+To perform a join check on a server at a specific IP address:
+
+```bash
+./ServerRawler join 192.168.1.1
+```
+
+To perform a join check on a server at a specific IP address and port:
+
+```bash
+./ServerRawler join example.org:25565
+```
+
+### Example output:
+*No output due to development status*

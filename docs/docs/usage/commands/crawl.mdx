@@ -1,0 +1,44 @@
+---
+title: crawl - Command
+---
+
+# `crawl` - Command
+
+Starts a continuous crawling loop to discover Minecraft servers.
+The crawler generates IP addresses (either randomly or within a specified CIDR range) and attempts to ping them.
+Discovered servers are then processed and, if enabled, saved to the database.
+
+:::info
+This is the primary command for actively discovering new servers. It runs indefinitely until manually stopped (e.g., by pressing `Ctrl+C`).
+:::
+
+:::tip[Customization]
+If you are searching for the flags, we dont have any.
+Instead, we give a configuration file: [Look here for more details](../../configuration/config).
+:::
+
+## Usage
+
+```bash
+./ServerRawler --crawl
+```
+
+## Examples
+
+To start crawling:
+
+```bash
+./ServerRawler --crawl
+```
+
+To crawl a specific CIDR range using the [`--cidr` argument](../arguments/cidr):
+
+```bash
+./ServerRawler --crawl --cidr 10.0.0.0/8
+```
+
+To crawl without saving data to the database using the [`--no-database` argument](../arguments/no-database):
+
+```bash
+./ServerRawler --crawl --no-database
+```
