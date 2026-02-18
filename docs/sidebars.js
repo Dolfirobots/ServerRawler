@@ -64,7 +64,6 @@ const sidebars = {
             'usage/commands/convert-img',
           ],
         },
-        'usage/examples',
       ],
     },
     'features',
