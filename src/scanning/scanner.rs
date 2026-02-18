@@ -7,14 +7,14 @@ use crate::minecraft::ping::execute_ping;
 use crate::minecraft::query::execute_query;
 
 pub struct ScanConfig {
-    query_timeout: Duration,
-    ping_timeout: Duration,
-    join_timeout: Duration,
+    pub query_timeout: Duration,
+    pub ping_timeout: Duration,
+    pub join_timeout: Duration,
 
-    with_uuid: bool,
-    do_query: bool,
-    do_join: bool,
-    max_tasks: u32
+    pub with_uuid: bool,
+    pub do_query: bool,
+    pub do_join: bool,
+    pub max_tasks: u32
 }
 
 impl Default for ScanConfig {
