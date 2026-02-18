@@ -74,14 +74,7 @@ impl ProcessError {
 
 // Structs
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(default)]
-pub struct MainConfig {
-    pub crawler: CrawlerConfig,
-    pub scanner: ScannerConfig,
-    pub network: NetworkConfig,
-}
-
+// database.toml
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct DatabaseConfig {
@@ -92,25 +85,35 @@ pub struct DatabaseConfig {
     pub database: String,
 }
 
+// main.toml
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(default)]
+pub struct MainConfig {
+    pub crawler: CrawlerConfig,
+    pub scanner: ScannerConfig,
+    pub general: GeneralConfig,
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CrawlerConfig {
     pub ips_per_iteration: u32,
     pub max_tasks: u32,
-    pub runs: u32,
-    pub time_between_runs: u64,
-    pub default_ports: Vec<u16>,
+    pub time_between_iteration: u64,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ScannerConfig {
     pub max_tasks: u32,
-    pub default_ports: Vec<u16>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct NetworkConfig {
-    pub max_tasks: u32,
-    pub timeout: u64,
+pub struct GeneralConfig {
+    pub max_network_tasks: u32,
+    pub ping_timeout: u64,
+    pub query_timeout: u64,
+    pub join_timeout: u64,
+    pub do_uuid_fetch: bool,
+    pub default_ports: Vec<u16>, // TODO
 }
 
 // Process code
@@ -134,16 +137,28 @@ impl MainConfig {
     pub fn validate(&self) -> Vec<ConfigError> {
         let mut errors = Vec::new();
 
-        // [network]
-        let net = &self.network;
-        if net.max_tasks < 10 {
-            errors.push(InvalidValue("network.max_tasks".into(), "Must be at least 10 for performance.".into()));
-        } else if net.max_tasks > 20000 {
-            errors.push(InvalidValue("network.max_tasks".into(), "Above 20000 might crash your network stack.".into()));
+        // [general]
+        let general = &self.general;
+        if general.max_network_tasks < 10 {
+            errors.push(InvalidValue("general.max_tasks".into(), "Must be at least 10 for performance.".into()));
+        } else if general.max_network_tasks > 20000 {
+            errors.push(InvalidValue("general.max_tasks".into(), "Above 20000 might crash your network stack.".into()));
         }
 
-        if !(80..=15000).contains(&net.timeout) {
-            errors.push(InvalidValue("network.timeout".into(), "Keep it between 80ms and 15s.".into()));
+        if !(80..=15000).contains(&general.ping_timeout) {
+            errors.push(InvalidValue("general.ping_timeout".into(), "Keep it between 80ms and 15s.".into()));
+        }
+        if !(80..=15000).contains(&general.query_timeout) {
+            errors.push(InvalidValue("general.query_timeout".into(), "Keep it between 80ms and 15s.".into()));
+        }
+        if !(80..=15000).contains(&general.join_timeout) {
+            errors.push(InvalidValue("general.join_timeout".into(), "Keep it between 80ms and 15s.".into()));
+        }
+
+        if general.default_ports.is_empty() {
+            errors.push(MissingRequired("general.default_ports".into()));
+        } else if general.default_ports.iter().any(|&p| p == 0) {
+            errors.push(InvalidValue("general.default_ports".into(), "Port 0 is not allowed.".into()));
         }
 
         // [crawler]
@@ -151,26 +166,15 @@ impl MainConfig {
         if crawl.ips_per_iteration < 1000 {
             errors.push(InvalidValue("crawler.ips_per_iteration".into(), "Too low. At least 1000 required.".into()));
         }
-
-        if crawl.default_ports.is_empty() {
-            errors.push(MissingRequired("crawler.default_ports".into()));
-        } else if crawl.default_ports.iter().any(|&p| p == 0) {
-            errors.push(InvalidValue("crawler.default_ports".into(), "Port 0 is not allowed.".into()));
-        }
-
-        // [scanning]
-        if self.scanner.default_ports.is_empty() {
-            errors.push(MissingRequired("scanning.default_ports".into()));
-        }
         errors
     }
 
     pub fn get_crawler_tasks(&self) -> u32 {
-        if self.crawler.max_tasks == 0 { self.network.max_tasks } else { self.crawler.max_tasks }
+        if self.crawler.max_tasks == 0 { self.general.max_network_tasks } else { self.crawler.max_tasks }
     }
 
     pub fn get_scanner_tasks(&self) -> u32 {
-        if self.scanner.max_tasks == 0 { self.network.max_tasks } else { self.scanner.max_tasks }
+        if self.scanner.max_tasks == 0 { self.general.max_network_tasks } else { self.scanner.max_tasks }
     }
 }
 
@@ -247,7 +251,7 @@ impl DatabaseConfig {
 
 pub fn init(root_path: Option<String>) -> Result<(), ProcessError> {
     let header = "# ServerRawler configuration file\n\
-    # Github: https://github.com/Cyberdolfi/ServerRawler\n";
+    # Github: https://github.com/Cyberdolfi/ServerRawler";
     let dir = root_path.map(PathBuf::from).unwrap_or_else(|| PathBuf::from(".").join("config"));
 
     if !dir.exists() {
@@ -257,12 +261,13 @@ pub fn init(root_path: Option<String>) -> Result<(), ProcessError> {
     let config_file = dir.join("config.toml");
     let db_file = dir.join("database.toml");
 
+    // Generating configurations
     if !config_file.exists() {
         let default_config = MainConfig::default();
         let toml_content = toml::to_string_pretty(&default_config).unwrap();
 
         let doc_link = "# Read the docs here: https://cyberdolfi.github.io/ServerRawler/docs/configuration/config";
-        let final_content = format!("{}{}{}", header, doc_link, toml_content);
+        let final_content = format!("{}\n{}\n\n{}", header, doc_link, toml_content);
         fs::write(config_file, final_content).map_err(Io)?;
     }
 
@@ -271,7 +276,7 @@ pub fn init(root_path: Option<String>) -> Result<(), ProcessError> {
         let toml_content = toml::to_string_pretty(&default_db).unwrap();
 
         let doc_link = "# Read the docs here: https://cyberdolfi.github.io/ServerRawler/docs/configuration/database";
-        let final_content = format!("{}{}{}", header, doc_link, toml_content);
+        let final_content = format!("{}\n{}\n\n{}", header, doc_link, toml_content);
         fs::write(db_file, final_content).map_err(Io)?;
     }
 
@@ -286,17 +291,18 @@ impl Default for MainConfig {
             crawler: CrawlerConfig {
                 ips_per_iteration: 1000000,
                 max_tasks: 0,
-                runs: 0,
-                time_between_runs: 0,
-                default_ports: vec![25565],
+                time_between_iteration: 0,
             },
             scanner: ScannerConfig {
                 max_tasks: 0,
-                default_ports: vec![25565],
             },
-            network: NetworkConfig {
-                max_tasks: 2000,
-                timeout: 3000,
+            general: GeneralConfig {
+                max_network_tasks: 2000,
+                ping_timeout: 3000,
+                query_timeout: 3000,
+                join_timeout: 3000,
+                do_uuid_fetch: true,
+                default_ports: vec![25565],
             },
         }
     }
@@ -330,7 +336,7 @@ mod tests {
     #[test]
     fn test_invalid_network_tasks() {
         let mut config = MainConfig::default();
-        config.network.max_tasks = 5;
+        config.general.max_network_tasks = 5;
         let errors = config.validate();
         assert!(!errors.is_empty());
     }
