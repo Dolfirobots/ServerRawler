@@ -6,7 +6,7 @@ use futures::StreamExt;
 use tokio::fs::File;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use crate::database::{parse_server, ServerHistory, ServerInfo};
-use crate::{database, logger};
+use crate::logger;
 use crate::config::MainConfig;
 use crate::logger::DefaultColor;
 use crate::manager::TaskManager;
