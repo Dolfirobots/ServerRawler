@@ -75,23 +75,6 @@ pub async fn insert_players(player_data: &Vec<(Player, PlayerHistory)>, tx: &mut
     for (player, history) in player_data {
         sqlx::query(
             r#"
-            INSERT INTO players (uuid, username, discovered, last_seen)
-            VALUES ($1, $2, $3, $4)
-            ON CONFLICT (uuid)
-            DO UPDATE SET
-                last_seen = EXCLUDED.last_seen,
-                username = EXCLUDED.username
-            "#
-        )
-            .bind(&player.uuid)
-            .bind(&player.username)
-            .bind(player.discovered)
-            .bind(player.last_seen)
-            .execute(&mut **tx)
-            .await?;
-
-        sqlx::query(
-            r#"
             INSERT INTO player_history (uuid, username, server_id, seen)
             VALUES ($1, $2, $3, $4)
             "#
