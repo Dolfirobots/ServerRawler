@@ -11,6 +11,7 @@ pub enum IpType {
     PrivateOnly,
 }
 
+#[derive(Clone, Copy)]
 pub struct IpGenerator {
     network_u32: u32,
     range_size: u32,
@@ -77,11 +78,11 @@ impl IpGenerator {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub struct IpGeneratorBuilder {
     network: Option<Ipv4Addr>,
     prefix_len: Option<u8>,
-    count: u32,
+    amount: u32,
     ip_type: IpType,
 }
 
@@ -92,8 +93,8 @@ impl IpGeneratorBuilder {
         self
     }
 
-    pub fn count(mut self, count: u32) -> Self {
-        self.count = count;
+    pub fn amount(mut self, amount: u32) -> Self {
+        self.amount = amount;
         self
     }
 
@@ -114,7 +115,7 @@ impl IpGeneratorBuilder {
         IpGenerator {
             network_u32,
             range_size,
-            count: self.count,
+            count: self.amount,
             ip_type: self.ip_type,
             use_cidr,
         }

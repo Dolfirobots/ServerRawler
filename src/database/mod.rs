@@ -1,3 +1,4 @@
+use std::net::Ipv4Addr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -100,7 +101,7 @@ pub fn parse_to_url(host: &str, port: u16, user: &str, password: Option<&str>, d
     Ok(url)
 }
 
-pub fn parse_server(ip: String, port: u16, ping: Ping, query: Option<Query>, join: Option<Join>) -> (ServerInfo, ServerHistory) {
+pub fn parse_server(ip: Ipv4Addr, port: u16, ping: Ping, query: Option<Query>, join: Option<Join>) -> (ServerInfo, ServerHistory) {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -108,7 +109,7 @@ pub fn parse_server(ip: String, port: u16, ping: Ping, query: Option<Query>, joi
 
     let info = ServerInfo {
         server_id: None,
-        server_ip: ip,
+        server_ip: ip.to_string(),
         server_port: port,
         last_seen: now,
         discovered: now,
