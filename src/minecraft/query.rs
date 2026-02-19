@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::net::Ipv4Addr;
 use std::time::Duration;
 use serde::Deserialize;
 use tokio::net::UdpSocket;
@@ -6,10 +7,9 @@ use tokio::time::timeout;
 use crate::minecraft::{Query, Plugin, LightPlayer, Software};
 
 // To understand this here I recommend to read https://minecraft.wiki/w/Query#Client_to_Server_Packet_Format
-pub async fn execute_query(ip: &str, port: u16, timeout_dur: Duration, with_uuids: bool) -> Result<Query, String> {
-    let address = format!("{}:{}", ip, port);
+pub async fn execute_query(ip: Ipv4Addr, port: u16, timeout_dur: Duration, with_uuids: bool) -> Result<Query, String> {
     let socket = UdpSocket::bind("0.0.0.0:0").await.map_err(|e| e.to_string())?;
-    socket.connect(&address).await.map_err(|e| e.to_string())?;
+    socket.connect((ip, port)).await.map_err(|e| e.to_string())?;
 
     // Query handshake
     let session_id: i32 = 0x01010101; // Just a random ID
@@ -83,6 +83,7 @@ pub async fn parse_query_response(data: &[u8], with_uuids: bool) -> Result<Query
     let mut players = Vec::new();
     let client = reqwest::Client::new();
 
+    // Getting uuids from Mojangs server
     for name in player_names {
         let mut uuid = None;
 
@@ -102,6 +103,7 @@ pub async fn parse_query_response(data: &[u8], with_uuids: bool) -> Result<Query
         });
     }
 
+    // Parsing plugin string
     let mut raw_software_str = "Vanilla".to_string();
     let mut plugins = Vec::new();
 
@@ -164,6 +166,5 @@ fn parse_plugin_string(raw: &str) -> Vec<Plugin> {
 
 #[derive(Deserialize)]
 struct MojangProfile {
-    id: String,
-    // name: String,
+    id: String
 }

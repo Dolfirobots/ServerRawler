@@ -1,3 +1,4 @@
+use std::net::Ipv4Addr;
 use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
@@ -7,10 +8,8 @@ use serde_json::Value;
 use crate::minecraft::utils::{write_varint, read_varint, prepend_length, Handshake, MinecraftPacket, parse_legacy, parse_plain};
 use crate::minecraft::{Ping, LightPlayer, Mod, ModLoader};
 
-pub async fn execute_ping(ip: String, port: u16, protocol: i32, timeout_dur: Duration) -> Result<Ping, String> {
-    let address = format!("{}:{}", ip, port);
-
-    let mut stream = match timeout(timeout_dur, TcpStream::connect(&address)).await {
+pub async fn execute_ping(ip: Ipv4Addr, port: u16, protocol: i32, timeout_dur: Duration) -> Result<Ping, String> {
+    let mut stream = match timeout(timeout_dur, TcpStream::connect((ip, port))).await {
         Ok(Ok(s)) => s,
         Ok(Err(e)) => return Err(format!("Connect error: {}", e)),
         Err(_) => return Err("Connect timeout".into()),
@@ -21,7 +20,7 @@ pub async fn execute_ping(ip: String, port: u16, protocol: i32, timeout_dur: Dur
 
     let handshake = Handshake {
         protocol,
-        address: ip.clone(),
+        address: ip,
         port,
         next_state: 1,
     }.serialize();

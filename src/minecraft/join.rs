@@ -1,3 +1,4 @@
+use std::net::Ipv4Addr;
 use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio::io::AsyncWriteExt;
@@ -8,17 +9,17 @@ use crate::minecraft::utils::{Handshake, write_varint, read_varint, prepend_leng
 // TODO: Make this work
 //  It have every time the same error:
 //  [20:13:41 INFO]: /[0:0:0:0:0:0:0:1]:58067 lost connection: Internal Exception: io.netty.handler.codec.DecoderException: Failed to decode packet 'serverbound/minecraft:hello'
-pub async fn execute_join_check(ip: String, port: u16, timeout_dur: Duration, username: &str, protocol: i32) -> Result<Join, String> {
-    let address = format!("{}:{}", ip, port);
-    let mut stream = timeout(timeout_dur, TcpStream::connect(&address))
+// I used this docs here https://minecraft.wiki/w/Java_Edition_protocol/FAQ#What's_the_normal_login_sequence_for_a_client?
+pub async fn execute_join_check(ip: Ipv4Addr, port: u16, timeout_dur: Duration, username: &str, protocol: i32) -> Result<Join, String> {
+    let mut stream = timeout(timeout_dur, TcpStream::connect((ip, port)))
         .await
         .map_err(|_| "Connect Timeout")?
         .map_err(|e| e.to_string())?;
 
-    // Sending handshake
+    // Send handshake
     let handshake = Handshake {
         protocol,
-        address: ip.clone(),
+        address: ip,
         port,
         next_state: 2,
     }.serialize();
@@ -29,6 +30,7 @@ pub async fn execute_join_check(ip: String, port: u16, timeout_dur: Duration, us
     write_varint(0x00, &mut login_start);
     login_start.extend(encode_string(username));
     login_start.push(0x01);
+    // Used here 0x0U0
     login_start.extend(encode_uuid("00000000-0000-0000-0000-000000000000"));
 
     let final_login = prepend_length(login_start);

@@ -1,3 +1,4 @@
+use std::net::Ipv4Addr;
 use std::sync::Arc;
 use futures::{stream, Stream, StreamExt};
 use std::time::Duration;
@@ -33,7 +34,7 @@ impl Default for ScanConfig {
 }
 
 pub struct ScanResult {
-    pub ip: String,
+    pub ip: Ipv4Addr,
     pub port: u16,
 
     pub ping: minecraft::Ping,
@@ -41,7 +42,7 @@ pub struct ScanResult {
     pub join: Option<minecraft::Join>,
 }
 
-pub fn scan(targets: Vec<(String, u16)>, config: ScanConfig) -> impl Stream<Item = Option<ScanResult>> {
+pub fn scan(targets: Vec<(Ipv4Addr, u16)>, config: ScanConfig) -> impl Stream<Item = Option<ScanResult>> {
     let max_tasks = config.max_tasks as usize;
     let config_arc = Arc::new(config);
 
@@ -50,16 +51,16 @@ pub fn scan(targets: Vec<(String, u16)>, config: ScanConfig) -> impl Stream<Item
             let cfg = config_arc.clone();
 
             async move {
-                match execute_ping(ip.clone(), port, 767, cfg.ping_timeout).await {
+                match execute_ping(ip, port, 767, cfg.ping_timeout).await {
                     Ok(ping_res) => {
                         let query = if cfg.do_query {
-                            execute_query(ip.as_str(), port, cfg.query_timeout, cfg.with_uuid).await.ok()
+                            execute_query(ip, port, cfg.query_timeout, cfg.with_uuid).await.ok()
                         } else {
                             None
                         };
 
                         let join = if cfg.do_join {
-                            execute_join_check(ip.clone(), port, cfg.join_timeout, "ServerRawler", ping_res.protocol_version.unwrap_or(767)).await.ok()
+                            execute_join_check(ip, port, cfg.join_timeout, "ServerRawler", ping_res.protocol_version.unwrap_or(767)).await.ok()
                         } else {
                             None
                         };
