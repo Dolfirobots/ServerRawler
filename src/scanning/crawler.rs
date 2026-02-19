@@ -16,7 +16,7 @@ pub async fn crawl(gen_config: IpGenerator) {
         loop {
             let start_time = Instant::now();
 
-            let ports = vec![25565, 25566]; // Example for later implementation
+            let ports = vec![25565]; // Example for later implementation
             let targets: Vec<(Ipv4Addr, u16)> = gen_config.generate()
                 .flat_map(|ip| {
                     stream::iter(ports.clone().into_iter().map(move |port| (ip, port)))
