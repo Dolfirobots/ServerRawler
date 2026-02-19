@@ -15,7 +15,7 @@ use crate::scanning::utils::{count_lines_fast, format_time, prettier_ping_result
 
 // TODO: Make a live stream from the file to scanner, because its more RAM efficient
 pub async fn scan_file(path: String) {
-    let _ = TaskManager::spawn("File Scanner", move |_cancel_token| async move {
+    let _ = TaskManager::spawn("File Scanner", move |cancel_token| async move {
         let file = match File::open(&path).await {
             Ok(f) => f,
             Err(e) => {
@@ -43,6 +43,12 @@ pub async fn scan_file(path: String) {
 
         // Read file
         while let Ok(Some(line)) = lines.next_line().await {
+            if cancel_token.is_cancelled() {
+                logger::warning("File reading interrupted.".to_string())
+                    .prefix("File Scanner").send().await;
+                return;
+            }
+
             let line = line.trim();
             // Skip comments
             if line.is_empty() || line.starts_with('#') { continue; }
@@ -86,6 +92,12 @@ pub async fn scan_file(path: String) {
 
         // Scan stream
         while let Some(maybe_result) = scan_stream.next().await {
+            if cancel_token.is_cancelled() {
+                logger::warning("Scan interrupted. Saving results...".to_string())
+                    .prefix("File Scanner").send().await;
+                break;
+            }
+
             processed_count += 1;
 
             // Success
@@ -105,7 +117,7 @@ pub async fn scan_file(path: String) {
                 output.push_str(&prettier_ping_result(result.ping).await);
                 logger::success(output).prefix("File Scanner").send().await;
 
-                if found_batch.len() >= 50 {
+                if found_batch.len() >= 30 {
                     let batch_to_insert = std::mem::take(&mut found_batch);
                     save_server(&batch_to_insert).await;
                 }

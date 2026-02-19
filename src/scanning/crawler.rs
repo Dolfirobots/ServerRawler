@@ -12,17 +12,31 @@ use crate::scanning::scanner::{scan, ScanConfig};
 use crate::scanning::utils::{format_time, prettier_ping_result, save_server};
 
 pub async fn crawl(gen_config: IpGenerator) {
-    let _ = TaskManager::spawn("Crawler", move |_cancel_token| async move {
+    let _ = TaskManager::spawn("Crawler", move |cancel_token| async move {
         loop {
+            if cancel_token.is_cancelled() {
+                logger::warning("Crawler shutting down...".to_string())
+                    .prefix("Crawler").send().await;
+                break;
+            }
+
             let start_time = Instant::now();
 
             let ports = vec![25565]; // Example for later implementation
             let targets: Vec<(Ipv4Addr, u16)> = gen_config.generate()
+                .take_while(|_| {
+                    let cancelled = cancel_token.is_cancelled();
+                    async move { !cancelled }
+                })
                 .flat_map(|ip| {
                     stream::iter(ports.clone().into_iter().map(move |port| (ip, port)))
                 })
                 .collect()
                 .await;
+
+            if cancel_token.is_cancelled() && targets.is_empty() {
+                break;
+            }
 
             let total_targets = targets.len();
             let mut found_batch: Vec<(ServerInfo, ServerHistory)> = Vec::new();
@@ -54,6 +68,12 @@ pub async fn crawl(gen_config: IpGenerator) {
             while let Some(maybe_result) = scan_stream.next().await {
                 processed_count += 1;
 
+                if cancel_token.is_cancelled() {
+                    logger::warning("Scan interrupted. Saving results...".to_string())
+                        .prefix("Crawler").send().await;
+                    break;
+                }
+
                 // Success
                 if let Some(result) = maybe_result {
                     let parsed = parse_server(result.ip, result.port, result.ping.clone(), result.query, result.join);
@@ -70,12 +90,11 @@ pub async fn crawl(gen_config: IpGenerator) {
                     );
                     output.push_str(&prettier_ping_result(result.ping).await);
                     logger::success(output).prefix("Crawler").send().await;
-                }
 
-                // Database insert
-                if processed_count % 10000 == 0 {
-                    let batch_to_insert = std::mem::take(&mut found_batch);
-                    save_server(&batch_to_insert).await;
+                    if found_batch.len() >= 30 {
+                        let batch_to_insert = std::mem::take(&mut found_batch);
+                        save_server(&batch_to_insert).await;
+                    }
                 }
 
                 // Progress calc
@@ -101,6 +120,10 @@ pub async fn crawl(gen_config: IpGenerator) {
 
             if !found_batch.is_empty() {
                 save_server(&found_batch).await;
+            }
+
+            if cancel_token.is_cancelled() {
+                break;
             }
 
             // Finished
