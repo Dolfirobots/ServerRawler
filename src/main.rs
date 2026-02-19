@@ -11,7 +11,8 @@ use tokio::io::{AsyncWriteExt, BufWriter};
 use crate::config::{DatabaseConfig, MainConfig};
 use crate::logger::DefaultColor;
 use crate::manager::TaskManager;
-use crate::randomizer::{IpGenerator, IpType};
+use crate::randomizer::{IpGenerator, IpGeneratorBuilder, IpType};
+use crate::scanning::crawler;
 use crate::updater::GithubAPI;
 
 mod updater;
@@ -24,6 +25,7 @@ mod database;
 mod config;
 mod cli;
 mod scanning;
+mod webapi;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
@@ -107,11 +109,20 @@ async fn main() -> Result<()> {
         }
 
         cli::Commands::Crawl { cidr } => {
-            let max_tasks = active_cfg.get_crawler_tasks();
+            let active_cfg = MainConfig::get().expect("Config must be loaded");
             let ip_count = active_cfg.crawler.ips_per_iteration;
+            let range_data = parse_user_cidr(cidr).await;
 
-            let range = parse_user_cidr(cidr).await;
-            tasks::crawl(range, max_tasks, ip_count).await;
+            let mut builder = IpGenerator::builder()
+                .amount(ip_count)
+                .ip_type(IpType::PublicOnly);
+
+            if let Some((ip, prefix)) = range_data {
+                builder = builder.cidr(ip, prefix);
+            }
+
+            let generator_config = builder.build();
+            crawler::crawl(generator_config).await;
         }
         
         cli::Commands::Scan { path } => {
@@ -124,8 +135,8 @@ async fn main() -> Result<()> {
             TaskManager::spawn("IP Generator", move |cancel_token| async move {
                 let result: std::io::Result<()> = async {
                     let mut builder = IpGenerator::builder()
-                        .ip_type(IpType::PublicOnly)
-                        .count(amount);
+                        .ip_type(IpType::PublicOnly) // TODO: Make it configurable
+                        .amount(amount);
 
                     if let Some(cidr_data) = cidr {
                         builder = builder.cidr(cidr_data.0, cidr_data.1);
@@ -143,7 +154,7 @@ async fn main() -> Result<()> {
                     }
 
                     let generator = builder.build();
-                    let file = File::create(path).await?; // TODO: NEVER TRUST USER INPUT
+                    let file = File::create(path).await?;
                     let mut writer = BufWriter::new(file);
                     let mut ip_stream = generator.generate();
 
