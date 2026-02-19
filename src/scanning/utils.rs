@@ -2,6 +2,8 @@ use std::io::SeekFrom;
 use colored_text::Colorize;
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncSeekExt};
+use crate::database::{ServerHistory, ServerInfo};
+use crate::{database, logger};
 use crate::logger::DefaultColor;
 use crate::minecraft::{Ping, Query};
 
@@ -154,4 +156,25 @@ pub fn format_time(time: u64) -> String {
         trimmer,
         seconds.hex(DefaultColor::Highlight.hex())
     )
+}
+
+pub async fn save_server(results: &Vec<(ServerInfo, ServerHistory)>) {
+    let use_db = crate::USE_DATABASE.get().map(|a| **a).unwrap_or(true);
+
+    if !use_db {
+        logger::debug("Skipping database insert...".into()).prefix("Database").send().await;
+        return;
+    }
+
+    match database::server::insert_servers(results).await {
+        Err(e) => logger::error(
+            format!("Failed to insert server to database: {}", e.hex(DefaultColor::Highlight.hex()))
+        ).prefix("File Scanner").send().await,
+        Ok(_) => logger::success(
+            format!(
+                "Saved {} servers to the database!",
+                results.len().hex(DefaultColor::Highlight.hex())
+            )
+        ).prefix("File Scanner").send().await
+    }
 }
