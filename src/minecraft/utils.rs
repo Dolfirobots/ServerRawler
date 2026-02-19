@@ -1,3 +1,4 @@
+use std::net::Ipv4Addr;
 use serde_json::Value;
 use tokio::io::AsyncReadExt;
 use tokio::net::TcpStream;
@@ -40,7 +41,7 @@ pub trait MinecraftPacket {
 
 pub struct Handshake {
     pub protocol: i32,
-    pub address: String,
+    pub address: Ipv4Addr,
     pub port: u16,
     pub next_state: i32,
 }
@@ -48,11 +49,19 @@ pub struct Handshake {
 impl MinecraftPacket for Handshake {
     fn serialize(&self) -> Vec<u8> {
         let mut data = Vec::new();
+        // Packet ID for handshake
         write_varint(0x00, &mut data);
+        // Client protocol version
         write_varint(self.protocol, &mut data);
-        write_varint(self.address.len() as i32, &mut data);
-        data.extend_from_slice(self.address.as_bytes());
+        // IP address
+        let addr_str = self.address.to_string();
+        let addr_bytes = addr_str.as_bytes();
+
+        write_varint(addr_bytes.len() as i32, &mut data);
+        data.extend_from_slice(addr_bytes);
+        // Port
         data.extend_from_slice(&self.port.to_be_bytes());
+        // Next state
         write_varint(self.next_state, &mut data);
         prepend_length(data)
     }

@@ -1,3 +1,5 @@
+use std::net::Ipv4Addr;
+use std::str::FromStr;
 use std::time::{Duration, Instant};
 use colored_text::Colorize;
 use futures::StreamExt;
@@ -9,8 +11,9 @@ use crate::config::MainConfig;
 use crate::logger::DefaultColor;
 use crate::manager::TaskManager;
 use crate::scanning::scanner::{scan, ScanConfig};
-use crate::scanning::utils::{count_lines_fast, format_time, prettier_ping_result};
+use crate::scanning::utils::{count_lines_fast, format_time, prettier_ping_result, save_server};
 
+// TODO: Make a live stream from the file to scanner, because its more RAM efficient
 pub async fn scan_file(path: String) {
     let _ = TaskManager::spawn("File Scanner", move |_cancel_token| async move {
         let file = match File::open(&path).await {
@@ -44,13 +47,18 @@ pub async fn scan_file(path: String) {
             // Skip comments
             if line.is_empty() || line.starts_with('#') { continue; }
 
-            // Parse port (IP[:PORT])
+            // Parse port
+            // Format: IP[:PORT]
             if let Some((ip, port_str)) = line.split_once(':') {
                 if let Ok(port) = port_str.parse::<u16>() {
-                    targets.push((ip.to_string(), port));
+                    if let Ok(ipv4) = Ipv4Addr::from_str(ip) {
+                        targets.push((ipv4, port));
+                    }
                 }
             } else {
-                targets.push((line.to_string(), 25565));
+                if let Ok(ipv4) = Ipv4Addr::from_str(line) {
+                    targets.push((ipv4, 25565)); // TODO: Add default ports
+                }
             }
         }
 
@@ -82,7 +90,7 @@ pub async fn scan_file(path: String) {
 
             // Success
             if let Some(result) = maybe_result {
-                let parsed = parse_server(result.ip.clone(), result.port, result.ping.clone(), result.query, result.join);
+                let parsed = parse_server(result.ip, result.port, result.ping.clone(), result.query, result.join);
                 found_batch.push(parsed);
                 total_found_count += 1;
 
@@ -90,7 +98,7 @@ pub async fn scan_file(path: String) {
                 output.push_str(
                     &format!(
                         "Found server: {}:{}\n",
-                        result.ip.hex(DefaultColor::Highlight.hex()),
+                        result.ip.to_string().hex(DefaultColor::Highlight.hex()),
                         result.port.hex(DefaultColor::Highlight.hex())
                     )
                 );
@@ -132,41 +140,23 @@ pub async fn scan_file(path: String) {
         let elapsed_time = start_time.elapsed();
 
         let pps = if elapsed_time.as_secs() > 0 {
-            total_lines as f64 / elapsed_time.as_secs_f64()
+            total_targets as f64 / elapsed_time.as_secs_f64()
         } else {
             0.0
         };
 
+        let percent = format!("{:.2}", (processed_count as f64 / total_targets as f64) * 100.0);
+
         logger::info(
             format!(
-                "File scan completed in {}. Found {} servers from {} targets. ({}{})",
+                "File scan finished in {}. Found {} servers from {} targets. That is {}% ({}{})",
                 format_time(elapsed_time.as_secs()).hex(DefaultColor::Highlight.hex()),
                 total_found_count.hex(DefaultColor::Highlight.hex()),
                 total_targets.hex(DefaultColor::Highlight.hex()),
+                percent.hex(DefaultColor::Highlight.hex()),
                 pps.round().hex(DefaultColor::Highlight.hex()),
                 "pps".hex(DefaultColor::DarkHighlight.hex())
             )
         ).send().await;
     }).await;
-}
-
-pub async fn save_server(results: &Vec<(ServerInfo, ServerHistory)>) {
-    let use_db = crate::USE_DATABASE.get().map(|a| **a).unwrap_or(true);
-
-    if !use_db {
-        logger::debug("Skipping database insert...".into()).prefix("Database").send().await;
-        return;
-    }
-
-    match database::server::insert_servers(results).await {
-        Err(e) => logger::error(
-            format!("Failed to insert server to database: {}", e.hex(DefaultColor::Highlight.hex()))
-        ).prefix("File Scanner").send().await,
-        Ok(_) => logger::success(
-            format!(
-                "Saved {} servers to the database!",
-                results.len().hex(DefaultColor::Highlight.hex())
-            )
-        ).prefix("File Scanner").send().await
-    }
 }
