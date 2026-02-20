@@ -106,7 +106,6 @@ const config = {
           {
             title: 'Project',
             items: [
-              { label: 'Features', to: '/docs/features' },
               { label: 'Contributing', to: '/docs/contributing' },
               { label: 'License', href: 'https://github.com/Cyberdolfi/ServerRawler/blob/main/LICENSE' },
             ],
