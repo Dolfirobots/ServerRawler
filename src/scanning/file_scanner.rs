@@ -157,11 +157,11 @@ pub async fn scan_file(path: String) {
             0.0
         };
 
-        let percent = format!("{:.2}", (processed_count as f64 / total_targets as f64) * 100.0);
+        let percent = format!("{:.2}", (processed_count as f64 / total_found_count as f64) * 100.0);
 
         logger::info(
             format!(
-                "File scan finished in {}. Found {} servers from {} targets. That is {}% ({}{})",
+                "File scan finished in {}. Found {} servers from {} targets. ({}% {}{})",
                 format_time(elapsed_time.as_secs()).hex(DefaultColor::Highlight.hex()),
                 total_found_count.hex(DefaultColor::Highlight.hex()),
                 total_targets.hex(DefaultColor::Highlight.hex()),

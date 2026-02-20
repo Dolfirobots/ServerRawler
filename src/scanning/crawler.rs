@@ -122,10 +122,6 @@ pub async fn crawl(gen_config: IpGenerator) {
                 save_server(&found_batch).await;
             }
 
-            if cancel_token.is_cancelled() {
-                break;
-            }
-
             // Finished
             let elapsed_time = start_time.elapsed();
 
@@ -134,11 +130,11 @@ pub async fn crawl(gen_config: IpGenerator) {
             } else {
                 0.0
             };
-            let percent = format!("{:.2}", (processed_count as f64 / total_targets as f64) * 100.0);
+            let percent = format!("{:.2}", (processed_count as f64 / total_found_count as f64) * 100.0);
 
             logger::info(
                 format!(
-                    "Crawl iteration finished in {}. Found {} servers from {} targets. That is {}% ({}{})",
+                    "Crawl iteration finished in {}. Found {} servers from {} targets. ({}% {}{})",
                     format_time(elapsed_time.as_secs()).hex(DefaultColor::Highlight.hex()),
                     total_found_count.hex(DefaultColor::Highlight.hex()),
                     total_targets.hex(DefaultColor::Highlight.hex()),
