@@ -243,6 +243,10 @@ async fn main() -> Result<()> {
                     }
                 }
             }).await;
+        },
+        
+        cli::Commands::Start { ip, port } => {
+            webapi::start(port).await;
         }
     }
 

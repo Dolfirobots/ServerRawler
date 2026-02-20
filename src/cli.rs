@@ -120,5 +120,16 @@ pub enum Commands {
 
         #[arg(value_name = "BASE64")]
         data: String,
+    },
+    
+    #[command(
+        about = "Start WebAPI with given bind IP and port"
+    )]
+    Start { // TODO
+        #[arg(value_name = "IP")]
+        ip: String,
+        
+        #[arg(value_name = "PORT")]
+        port: u16,
     }
 }
