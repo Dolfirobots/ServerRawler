@@ -1,7 +1,7 @@
+use futures::stream::{self, Stream, StreamExt};
 use std::collections::HashSet;
 use std::net::Ipv4Addr;
-use futures::stream::{self, Stream, StreamExt};
-use rand::Rng;
+use rand::RngExt;
 
 #[derive(Default, Clone, Copy)]
 pub enum IpType {
