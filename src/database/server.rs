@@ -88,3 +88,24 @@ pub async fn insert_players(player_data: &Vec<(Player, PlayerHistory)>, tx: &mut
     }
     Ok(())
 }
+
+pub async fn get_total_servers() -> Result<i64, sqlx::Error> {
+    let (count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM servers")
+        .fetch_one(pool::get_pool())
+        .await?;
+    Ok(count)
+}
+
+pub async fn get_total_history() -> Result<i64, sqlx::Error> {
+    let (count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM server_history")
+        .fetch_one(pool::get_pool())
+        .await?;
+    Ok(count)
+}
+
+pub async fn get_total_player_history() -> Result<i64, sqlx::Error> {
+    let (count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM player_history")
+        .fetch_one(pool::get_pool())
+        .await?;
+    Ok(count)
+}
