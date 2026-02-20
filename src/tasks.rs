@@ -3,7 +3,6 @@ use std::str::FromStr;
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use colored_text::Colorize;
-use futures::StreamExt;
 use tokio::sync::Semaphore;
 use crate::logger;
 use crate::logger::DefaultColor;
@@ -33,7 +32,6 @@ pub async fn init_networking(max_tasks: usize) {
     }
 }
 
-// Testing
 pub async fn run_ping(target: String) {
     TaskManager::spawn("Ping", move |_cancel_token| async move {
         logger::info(format!("Starting Ping for {}", target.clone().hex("#00BFFF")))
