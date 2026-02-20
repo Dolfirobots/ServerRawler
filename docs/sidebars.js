@@ -66,7 +66,6 @@ const sidebars = {
         },
       ],
     },
-    'features',
     'api',
     'contributing',
   ],
