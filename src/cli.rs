@@ -123,13 +123,7 @@ pub enum Commands {
     },
     
     #[command(
-        about = "Start WebAPI with given bind IP and port"
+        about = "Rescans the database"
     )]
-    Start { // TODO
-        #[arg(value_name = "IP")]
-        ip: String,
-        
-        #[arg(value_name = "PORT")]
-        port: u16,
-    }
+    Rescan
 }
