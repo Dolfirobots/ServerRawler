@@ -1,4 +1,4 @@
-use sqlx::{Postgres, Transaction};
+use sqlx::{Postgres, Row, Transaction};
 use crate::database::{parse_players, pool, Player, PlayerHistory, ServerHistory, ServerInfo};
 
 pub async fn insert_servers(results: &Vec<(ServerInfo, ServerHistory)>) -> Result<(), sqlx::Error> {
@@ -89,23 +89,23 @@ pub async fn insert_players(player_data: &Vec<(Player, PlayerHistory)>, tx: &mut
     Ok(())
 }
 
-pub async fn get_total_servers() -> Result<i64, sqlx::Error> {
-    let (count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM servers")
-        .fetch_one(pool::get_pool())
-        .await?;
-    Ok(count)
-}
+pub async fn get_total_servers() -> Result<Vec<ServerInfo>, sqlx::Error> {
+    let pool = pool::get_pool();
 
-pub async fn get_total_history() -> Result<i64, sqlx::Error> {
-    let (count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM server_history")
-        .fetch_one(pool::get_pool())
+    let rows = sqlx::query("SELECT server_id, server_ip, server_port, last_seen, discovered, bedrock, country FROM servers")
+        .fetch_all(pool)
         .await?;
-    Ok(count)
-}
 
-pub async fn get_total_player_history() -> Result<i64, sqlx::Error> {
-    let (count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM player_history")
-        .fetch_one(pool::get_pool())
-        .await?;
-    Ok(count)
+    let servers = rows.into_iter().map(|row| {
+        ServerInfo {
+            server_id: Some(row.get::<i32, _>("server_id") as i64),
+            server_ip: row.get::<String, _>("server_ip"),
+            server_port: row.get::<i32, _>("server_port") as u16,
+            last_seen: row.get::<i64, _>("last_seen"),
+            discovered: row.get::<i64, _>("discovered"),
+            bedrock: row.get::<bool, _>("bedrock"),
+            country: row.get::<Option<String>, _>("country"),
+        }
+    }).collect();
+    Ok(servers)
 }

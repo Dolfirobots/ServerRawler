@@ -11,8 +11,9 @@ use tokio::io::{AsyncWriteExt, BufWriter};
 use crate::config::{DatabaseConfig, MainConfig};
 use crate::logger::DefaultColor;
 use crate::manager::TaskManager;
-use crate::randomizer::{IpGenerator, IpGeneratorBuilder, IpType};
+use crate::randomizer::{IpGenerator, IpType};
 use crate::scanning::crawler;
+use crate::scanning::rescanner::rescan;
 use crate::updater::GithubAPI;
 
 mod updater;
@@ -25,7 +26,6 @@ mod database;
 mod config;
 mod cli;
 mod scanning;
-mod webapi;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
@@ -244,9 +244,9 @@ async fn main() -> Result<()> {
                 }
             }).await;
         },
-        
-        cli::Commands::Start { ip, port } => {
-            webapi::start(port).await;
+
+        cli::Commands::Rescan => {
+            rescan().await;
         }
     }
 

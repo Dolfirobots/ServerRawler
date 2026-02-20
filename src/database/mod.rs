@@ -10,7 +10,7 @@ pub mod server;
 
 // Database Server
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct ServerInfo {
     pub server_id: Option<i64>, // Key
     pub server_ip: String,
