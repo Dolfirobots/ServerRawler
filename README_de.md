@@ -23,6 +23,9 @@
 > [**[🇩🇪] *Deutsch***](./README_de.md)  
 > [**[🇬🇧] English**](./README.md)
 
+> [!TIP]
+> Join meinen Discord, um meine Datenbank zu nutzen
+
 > [!IMPORTANT]
 > Dieses Projekt befindet sich derzeit in einer frühen Alpha-Phase!
 
