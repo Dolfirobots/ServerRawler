@@ -24,7 +24,7 @@
 > [**[🇬🇧] *English***](./README.md)
 
 > [!TIP]
-> Join my Discord, to use easily use my Database
+> Join my Discord, to easily use my Database
 
 > [!IMPORTANT]
 > This project is currently in early alpha!
