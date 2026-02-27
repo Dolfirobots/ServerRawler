@@ -54,7 +54,7 @@ pub async fn start_bot() {
                     player_searcher::search_player(),
                 ],
                 on_error: |error| Box::pin(async move {
-                    logger::error(format!("Framework error: {:?}", error)).send().await;
+                    logger::error(format!("Framework error: {}", format!("{:?}", error).hex(DefaultColor::Highlight.hex()))).send().await;
                 }),
                 ..Default::default()
             })
