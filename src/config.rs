@@ -92,6 +92,7 @@ pub struct MainConfig {
     pub crawler: CrawlerConfig,
     pub scanner: ScannerConfig,
     pub general: GeneralConfig,
+    pub discord: DiscordConfig
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -114,6 +115,11 @@ pub struct GeneralConfig {
     pub join_timeout: u64,
     pub do_uuid_fetch: bool,
     pub default_ports: Vec<u16>, // TODO
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct DiscordConfig {
+    pub token: Option<String>
 }
 
 // Process code
@@ -304,6 +310,9 @@ impl Default for MainConfig {
                 do_uuid_fetch: true,
                 default_ports: vec![25565],
             },
+            discord: DiscordConfig {
+                token: None
+            }
         }
     }
 }
