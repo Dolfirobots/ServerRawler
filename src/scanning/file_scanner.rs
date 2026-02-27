@@ -13,7 +13,9 @@ use crate::manager::TaskManager;
 use crate::scanning::scanner::{scan, ScanConfig};
 use crate::scanning::utils::{count_lines_fast, format_time, prettier_ping_result, save_server};
 
-// TODO: Make a live stream from the file to scanner, because its more RAM efficient
+// TODO: Make a live stream from the file to scanner, because its more RAM efficient;
+//  Add here DNS resolution;
+//  Rewrite read logic
 pub async fn scan_file(path: String) {
     let _ = TaskManager::spawn("File Scanner", move |cancel_token| async move {
         let file = match File::open(&path).await {
