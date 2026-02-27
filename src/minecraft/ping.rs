@@ -6,7 +6,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use serde_json::Value;
 
 use crate::minecraft::utils::{write_varint, read_varint, prepend_length, Handshake, MinecraftPacket, parse_legacy, parse_plain};
-use crate::minecraft::{Ping, LightPlayer, Mod, ModLoader};
+use crate::minecraft::{Ping, LightPlayer, Mod};
 
 pub async fn execute_ping(ip: Ipv4Addr, port: u16, protocol: i32, timeout_dur: Duration) -> Result<Ping, String> {
     let mut stream = match timeout(timeout_dur, TcpStream::connect((ip, port))).await {
@@ -117,15 +117,15 @@ fn parse_response(buf: Vec<u8>, latency: f32) -> Result<Ping, String> {
         is_modded: v.get("modinfo").is_some() || v.get("forgeData").is_some(),
         mods,
         mod_loader: detected_loader.or(if v.get("forgeData").is_some() {
-            Some(ModLoader::Forge)
+            Some("Forge".into())
         } else {
-            None
+            None 
         }),
         latency,
     })
 }
 
-pub fn parse_mods(v: &Value) -> (Option<Vec<Mod>>, Option<ModLoader>) {
+pub fn parse_mods(v: &Value) -> (Option<Vec<Mod>>, Option<String>) {
     if let Some(forge_data) = v.get("forgeData") {
         let mods = forge_data.get("mods").and_then(|m| m.as_array()).map(|arr| {
             arr.iter().filter_map(|m| {
@@ -135,7 +135,7 @@ pub fn parse_mods(v: &Value) -> (Option<Vec<Mod>>, Option<ModLoader>) {
                 })
             }).collect()
         });
-        return (mods, Some(ModLoader::Forge));
+        return (mods, Some("Forge".into()));
     }
 
     if let Some(mod_info) = v.get("modinfo") {
@@ -150,14 +150,14 @@ pub fn parse_mods(v: &Value) -> (Option<Vec<Mod>>, Option<ModLoader>) {
         });
 
         let loader = match loader_type {
-            Some("FML") => Some(ModLoader::Forge),
-            _ => Some(ModLoader::Unknown("Legacy Modded".to_string())),
+            Some("FML") => Some("Forge".into()),
+            _ => Some("Legacy Modded".into()),
         };
         return (mods, loader);
     }
 
     if v.get("version").and_then(|v| v.get("name")).and_then(|n| n.as_str()).map(|n| n.contains("Fabric")).unwrap_or(false) {
-        return (None, Some(ModLoader::Fabric));
+        return (None, Some("Fabric".into()));
     }
 
     (None, None)

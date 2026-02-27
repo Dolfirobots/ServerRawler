@@ -26,7 +26,7 @@ pub struct Ping {
 
     pub is_modded: bool,
     pub mods: Option<Vec<Mod>>,
-    pub mod_loader: Option<ModLoader>,
+    pub mod_loader: Option<String>,
 
     pub latency: f32,
 }
@@ -52,17 +52,6 @@ pub struct Join {
 pub struct Software {
     pub name: String,
     pub version: String
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub enum ModLoader {
-    #[default]
-    Forge,
-    Fabric,
-    Quilt,
-    Paper,
-    Spigot,
-    Unknown(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
