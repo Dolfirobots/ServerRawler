@@ -125,5 +125,10 @@ pub enum Commands {
     #[command(
         about = "Rescans the database"
     )]
-    Rescan
+    Rescan,
+    
+    #[command(
+        about = "Start the Discord bot"
+    )]
+    Start,
 }

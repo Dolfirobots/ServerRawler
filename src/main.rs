@@ -26,6 +26,7 @@ mod database;
 mod config;
 mod cli;
 mod scanning;
+mod discord;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
@@ -94,7 +95,7 @@ async fn main() -> Result<()> {
     USE_DATABASE.set(Arc::new(!args.no_database)).ok();
     database::pool::load(args.config).await;
     
-    // Parse the commands
+    // Parse args
     match args.command {
         cli::Commands::Ping { address } => {
             tasks::run_ping(address).await;
@@ -247,6 +248,10 @@ async fn main() -> Result<()> {
 
         cli::Commands::Rescan => {
             rescan().await;
+        },
+
+        cli::Commands::Start => {
+            discord::start_bot().await;
         }
     }
 
