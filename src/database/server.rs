@@ -1,5 +1,5 @@
 use sqlx::{Postgres, Row, Transaction};
-use crate::database::{parse_players, pool, Player, PlayerHistory, ServerHistory, ServerInfo};
+use crate::database::{parse_database_server_history, parse_database_server_info, parse_players, pool, Player, PlayerHistory, ServerHistory, ServerInfo};
 
 pub async fn insert_servers(results: &Vec<(ServerInfo, ServerHistory)>) -> Result<(), sqlx::Error> {
     let pool = pool::get_pool();
@@ -52,7 +52,7 @@ pub async fn insert_servers(results: &Vec<(ServerInfo, ServerHistory)>) -> Resul
                 .bind(server_history.enforces_secure_chat)
                 .bind(server_history.is_modded_server)
                 .bind(serde_json::to_value(&server_history.mods).unwrap_or(serde_json::Value::Null))
-                .bind(serde_json::to_value(&server_history.mod_loader).unwrap_or(serde_json::Value::Null))
+                .bind(&server_history.mod_loader)
                 .bind(serde_json::to_value(&server_history.players).unwrap_or(serde_json::Value::Null))
                 .bind(serde_json::to_value(&server_history.plugins).unwrap_or(serde_json::Value::Null))
                 .bind(serde_json::to_value(&server_history.software).unwrap_or(serde_json::Value::Null))
@@ -92,20 +92,40 @@ pub async fn insert_players(player_data: &Vec<(Player, PlayerHistory)>, tx: &mut
 pub async fn get_total_servers() -> Result<Vec<ServerInfo>, sqlx::Error> {
     let pool = pool::get_pool();
 
-    let rows = sqlx::query("SELECT server_id, server_ip, server_port, last_seen, discovered, bedrock, country FROM servers")
+    let rows = sqlx::query("SELECT * FROM servers")
         .fetch_all(pool)
         .await?;
 
     let servers = rows.into_iter().map(|row| {
-        ServerInfo {
-            server_id: Some(row.get::<i32, _>("server_id") as i64),
-            server_ip: row.get::<String, _>("server_ip"),
-            server_port: row.get::<i32, _>("server_port") as u16,
-            last_seen: row.get::<i64, _>("last_seen"),
-            discovered: row.get::<i64, _>("discovered"),
-            bedrock: row.get::<bool, _>("bedrock"),
-            country: row.get::<Option<String>, _>("country"),
-        }
+        parse_database_server_info(&row)
     }).collect();
     Ok(servers)
+}
+
+pub async fn get_server_by_address(ip: String, port: u16) -> Result<Option<(ServerInfo, ServerHistory)>, sqlx::Error> {
+    let pool = pool::get_pool();
+
+    let row = sqlx::query(
+        r#"
+        SELECT s.*, h.*
+        FROM servers s
+        LEFT JOIN server_history h ON s.server_id = h.server_id
+        WHERE s.server_ip = $1 AND s.server_port = $2
+        ORDER BY h.seen DESC
+        LIMIT 1
+        "#
+    )
+        .bind(ip)
+        .bind(port as i32)
+        .fetch_optional(pool)
+        .await?;
+
+    if let Some(r) = row {
+        let server_info = parse_database_server_info(&r);
+        let server_history = parse_database_server_history(&r);
+
+        Ok(Some((server_info, server_history)))
+    } else {
+        Ok(None)
+    }
 }
