@@ -1,8 +1,10 @@
 use std::net::Ipv4Addr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
+use sqlx::postgres::PgRow;
+use sqlx::Row;
 use url::Url;
-use crate::minecraft::{Join, LightPlayer, Mod, ModLoader, Ping, Plugin, Query, Software};
+use crate::minecraft::{Join, LightPlayer, Mod, Ping, Plugin, Query, Software};
 
 pub mod pool;
 pub mod server;
@@ -12,7 +14,7 @@ pub mod server;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct ServerInfo {
-    pub server_id: Option<i64>, // Key
+    pub server_id: Option<i32>, // Key
     pub server_ip: String,
     pub server_port: u16,
 
@@ -46,7 +48,7 @@ pub struct ServerHistory {
 
     pub is_modded_server: Option<bool>,
     pub mods: Option<Vec<Mod>>,
-    pub mod_loader: Option<ModLoader>,
+    pub mod_loader: Option<String>,
 
     // Query
     pub players: Option<Vec<LightPlayer>>,
@@ -80,7 +82,7 @@ pub struct Player {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlayerHistory {
-    pub history_id: Option<i64>, // Key
+    pub history_id: Option<i32>, // Key
     pub uuid: String, // Key
     pub username: String,
 
@@ -200,4 +202,46 @@ pub fn parse_players(server_id: i32, server_history: &ServerHistory) -> Vec<(Pla
             (player, history)
         })
         .collect()
+}
+
+pub fn parse_database_server_history(row: &PgRow) -> ServerHistory {
+    ServerHistory {
+        history_id: Some(row.get::<i64, _>("history_id")),
+        server_id: Some(row.get::<i32, _>("server_id")),
+        seen: row.get::<i64, _>("seen"),
+
+        description: row.get::<Option<String>, _>("description"),
+        plain_description: row.get::<Option<String>, _>("plain_description"),
+        icon: row.get::<Option<String>, _>("icon"),
+        player_online: row.get::<Option<i32>, _>("player_online"),
+        player_max: row.get::<Option<i32>, _>("player_max"),
+        player_sample: serde_json::from_value(row.get("player_sample")).unwrap_or(None),
+        version_name: row.get::<Option<String>, _>("version_name"),
+        version_protocol: row.get::<Option<i32>, _>("version_protocol"),
+        enforces_secure_chat: row.get::<Option<bool>, _>("enforces_secure_chat"),
+
+        is_modded_server: row.get::<Option<bool>, _>("is_modded_server"),
+        mods: serde_json::from_value(row.get("mods")).unwrap_or(None),
+        mod_loader: row.get::<Option<String>, _>("mod_loader"),
+        players: serde_json::from_value(row.get("players")).unwrap_or(None),
+        plugins: serde_json::from_value(row.get("plugins")).unwrap_or(None),
+        software: serde_json::from_value(row.get("software")).unwrap_or(None),
+
+        kick_message: row.get::<Option<String>, _>("kick_message"),
+        cracked: row.get::<Option<bool>, _>("cracked"),
+        whitelist: row.get::<Option<bool>, _>("whitelist"),
+        latency: row.get::<Option<f32>, _>("latency"),
+    }
+}
+
+pub fn parse_database_server_info(row: &PgRow) -> ServerInfo {
+    ServerInfo {
+        server_id: Some(row.get::<i32, _>("server_id")),
+        server_ip: row.get::<String, _>("server_ip"),
+        server_port: row.get::<i32, _>("server_port") as u16,
+        last_seen: row.get::<i64, _>("last_seen"),
+        discovered: row.get::<i64, _>("discovered"),
+        bedrock: row.get::<bool, _>("bedrock"),
+        country: row.get::<Option<String>, _>("country"),
+    }
 }
