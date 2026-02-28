@@ -172,7 +172,7 @@ pub async fn save_server(results: &Vec<(ServerInfo, ServerHistory)>) {
         ).prefix("File Scanner").send().await,
         Ok(_) => logger::success(
             format!(
-                "Saved {} servers to the database!",
+                "Parted save: Saved {} servers to the database!",
                 results.len().hex(DefaultColor::Highlight.hex())
             )
         ).prefix("File Scanner").send().await
