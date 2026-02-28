@@ -4,12 +4,13 @@ use chrono::{DateTime, Utc};
 use colored_text::Colorize;
 use futures::StreamExt;
 use poise::{CreateReply, ReplyHandle};
-use serenity::all::{ButtonStyle, CreateInteractionResponse};
+use serenity::all::{ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateInteractionResponse, CreateSelectMenu, CreateSelectMenuKind, CreateSelectMenuOption, ReactionType};
 use serenity::builder::{CreateInteractionResponseMessage, EditInteractionResponse};
 use serenity::collector::ComponentInteractionCollector;
 use crate::discord::{actions, create_base_embed, create_error_embed, create_loading_embed, Context, Error};
 use crate::{logger, scanning};
 use crate::database::server;
+use crate::discord::actions::server_filter;
 use crate::logger::DefaultColor;
 use crate::minecraft::{join, ping, query};
 
@@ -75,7 +76,7 @@ pub async fn search_server(
                     }
                 }
             } else {
-                let error_embed = create_error_embed(&format!("Could not use IP: `{}`", input_ip), Some(start_time));
+                let error_embed = create_error_embed(&format!("Invalid IP: `{}`", input_ip), Some(start_time));
                 reply.edit(ctx, CreateReply::default().embed(error_embed)).await?;
             }
         }
@@ -87,15 +88,12 @@ pub async fn search_server(
 
         // Nothing was given
         (None, None) => {
-            // TODO: Good search mechanismus
-            reply.edit(ctx, CreateReply::default().content("In work!")).await?;
+            server_filter::open_filter_ui(ctx, reply).await?;
         }
     }
 
     Ok(())
 }
-
-// Action rows
 
 async fn server_not_found_action(
     start_time: DateTime<Utc>,
@@ -105,8 +103,8 @@ async fn server_not_found_action(
     port: u16,
     resolved_ip: Ipv4Addr
 ) -> Result<(), Error> {
-    let make_action_row = |disabled| vec![serenity::builder::CreateActionRow::Buttons(vec![
-        serenity::builder::CreateButton::new("lookup_server")
+    let make_action_row = |disabled| vec![CreateActionRow::Buttons(vec![
+        CreateButton::new("lookup_server")
             .label("Lookup")
             .style(ButtonStyle::Success)
             .emoji('🔍')
@@ -124,7 +122,7 @@ async fn server_not_found_action(
                 port
             )
         )
-        .color(0xFFD700);
+        .color(0xffd700);
 
     reply.edit(
         ctx, CreateReply::default()
