@@ -9,6 +9,7 @@ pub mod crawler;
 pub mod rescanner;
 
 // TODO: It can't find play.hypixel.net
+//  I do need to understand how DNS really works
 pub async fn resolve_address(hostname: &str, port: u16) -> Option<Ipv4Addr> {
     if let Ok(ip) = hostname.parse::<Ipv4Addr>() {
         return Some(ip);
