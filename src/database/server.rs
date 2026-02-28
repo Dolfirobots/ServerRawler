@@ -1,5 +1,6 @@
 use sqlx::{Postgres, Row, Transaction};
 use crate::database::{parse_database_server_history, parse_database_server_info, parse_players, pool, Player, PlayerHistory, ServerHistory, ServerInfo};
+use crate::discord::actions::server_filter::{NumberFilter, SearchFilters, StringFilter};
 
 pub async fn insert_servers(results: &Vec<(ServerInfo, ServerHistory)>) -> Result<(), sqlx::Error> {
     let pool = pool::get_pool();
