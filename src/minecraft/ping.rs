@@ -111,7 +111,12 @@ fn parse_response(buf: Vec<u8>, latency: f32) -> Result<Ping, String> {
         description_legacy: Some(legacy),
         description_plain: Some(plain),
 
-        favicon: v.get("favicon").and_then(|f| f.as_str()).map(|s| s.to_string().replace("data:image/png;base64,", "")),
+        favicon: v.get("favicon")
+            .and_then(|f| f.as_str())
+            .map(|s| {
+                let data = s.split(',').nth(1).unwrap_or(s);
+                data.chars().filter(|c| !c.is_whitespace()).collect()
+            }),
         enforces_secure_chat: v.get("enforcesSecureChat").and_then(|s| s.as_bool()),
 
         is_modded: v.get("modinfo").is_some() || v.get("forgeData").is_some(),
