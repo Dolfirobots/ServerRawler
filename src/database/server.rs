@@ -129,3 +129,119 @@ pub async fn get_server_by_address(ip: String, port: u16) -> Result<Option<(Serv
         Ok(None)
     }
 }
+
+pub async fn search_servers(filters: SearchFilters, limit: i64) -> Result<Option<Vec<(ServerInfo, ServerHistory)>>, sqlx::Error> {
+    let pool = pool::get_pool();
+
+    let mut query_builder: sqlx::QueryBuilder<'_, Postgres> = sqlx::QueryBuilder::new(
+        r#"
+        SELECT DISTINCT ON (s.server_id) s.*, h.*
+        FROM servers s
+        JOIN server_history h ON s.server_id = h.server_id
+        WHERE 1=1
+        "#
+    );
+
+    fn push_string_filter(builder: &mut sqlx::QueryBuilder<'_, Postgres>, field: &str, filter: Option<StringFilter>) {
+        if let Some(f) = filter {
+            match f {
+                StringFilter::Contains(val) => {
+                    builder.push(format!(" AND {} ILIKE ", field));
+                    builder.push_bind(format!("%{}%", val));
+                }
+                StringFilter::Equals(val) => {
+                    builder.push(format!(" AND {} ILIKE ", field));
+                    builder.push_bind(val);
+                }
+            }
+        }
+    }
+
+    fn push_number_filter(builder: &mut sqlx::QueryBuilder<'_, Postgres>, field: &str, filter: Option<NumberFilter>) {
+        if let Some(f) = filter {
+            match f {
+                NumberFilter::Less(n) => {
+                    builder.push(format!(" AND {} < ", field));
+                    builder.push_bind(n);
+                }
+                NumberFilter::Greater(n) => {
+                    builder.push(format!(" AND {} > ", field));
+                    builder.push_bind(n);
+                }
+                NumberFilter::Equal(n) => {
+                    builder.push(format!(" AND {} = ", field));
+                    builder.push_bind(n);
+                }
+                NumberFilter::Range(a, b) => {
+                    builder.push(format!(" AND {} BETWEEN ", field));
+                    builder.push_bind(a);
+                    builder.push(" AND ");
+                    builder.push_bind(b);
+                }
+            }
+        }
+    }
+
+    push_string_filter(&mut query_builder, "h.plain_description", filters.description);
+    push_string_filter(&mut query_builder, "h.version_name", filters.version_name);
+    push_string_filter(&mut query_builder, "h.software->>'name'", filters.software_name);
+    push_string_filter(&mut query_builder, "h.kick_message", filters.kick_message);
+
+    push_number_filter(&mut query_builder, "h.player_online", filters.players_online);
+    push_number_filter(&mut query_builder, "h.player_max", filters.players_max);
+
+    if let Some(protocol) = filters.version_protocol {
+        query_builder.push(" AND h.version_protocol = ");
+        query_builder.push_bind(protocol);
+    }
+
+    if let Some(enforce) = filters.enforces_secure_chat {
+        query_builder.push(" AND h.enforces_secure_chat = ");
+        query_builder.push_bind(enforce);
+    }
+
+    if let Some(modded) = filters.is_modded {
+        query_builder.push(" AND h.is_modded_server = ");
+        query_builder.push_bind(modded);
+    }
+
+    if let Some(cracked) = filters.cracked {
+        query_builder.push(" AND h.cracked = ");
+        query_builder.push_bind(cracked);
+    }
+
+    if let Some(whitelist) = filters.whitelist {
+        query_builder.push(" AND h.whitelist = ");
+        query_builder.push_bind(whitelist);
+    }
+
+    if let Some(plugin) = filters.plugin_name {
+        query_builder.push(" AND h.plugins @> ");
+        query_builder.push_bind(serde_json::json!([{ "name": plugin }]));
+    }
+
+    if let Some(m_id) = filters.mod_id {
+        query_builder.push(" AND h.mods @> ");
+        query_builder.push_bind(serde_json::json!([{ "mod_id": m_id }]));
+    }
+
+    query_builder.push(" ORDER BY s.server_id, h.seen DESC");
+
+    query_builder.push(" LIMIT ");
+    query_builder.push_bind(limit);
+
+    let rows = query_builder.build().fetch_all(pool).await?;
+
+    if rows.is_empty() {
+        return Ok(None);
+    }
+
+    let results = rows.iter().map(|row| {
+        (
+            parse_database_server_info(row),
+            parse_database_server_history(row)
+        )
+    }).collect();
+
+    Ok(Some(results))
+}
