@@ -6,10 +6,13 @@ mod player_searcher;
 
 use poise::serenity_prelude as serenity;
 use std::env;
+use std::fmt::format;
 use std::process::exit;
+use std::time::Duration;
 use chrono::{DateTime, Utc};
 use colored_text::Colorize;
-use serenity::all::{CreateEmbed, CreateEmbedFooter};
+use serenity::all::{ActionRowComponent, ComponentInteraction, ComponentInteractionDataKind, CreateActionRow, CreateEmbed, CreateEmbedFooter, CreateInputText, CreateInteractionResponse, CreateModal, InputTextStyle, ModalInteraction, ModalInteractionData};
+use serenity::collector::ModalInteractionCollector;
 use crate::{logger, manager};
 use crate::config::MainConfig;
 use crate::logger::DefaultColor;
@@ -54,7 +57,23 @@ pub async fn start_bot() {
                     player_searcher::search_player(),
                 ],
                 on_error: |error| Box::pin(async move {
-                    logger::error(format!("Framework error: {}", format!("{:?}", error).hex(DefaultColor::Highlight.hex()))).send().await;
+                    match error {
+                        poise::FrameworkError::Command { error, ctx, .. } => {
+                            logger::error(format!(
+                                "Command '{}' failed: {}",
+                                ctx.command().name.hex(DefaultColor::Highlight.hex()),
+                                error.hex(DefaultColor::Highlight.hex())
+                            )).prefix("Discord").send().await;
+                        },
+                        poise::FrameworkError::Setup { error, .. } => {
+                            logger::error(format!("Setup failed: {}", error.hex(DefaultColor::Highlight.hex())))
+                                .prefix("Discord").send().await;
+                        },
+                        other => {
+                            logger::error(format!("Framework error: {}", format!("{:?}", other).hex(DefaultColor::Highlight.hex())))
+                                .prefix("Discord").send().await;
+                        }
+                    }
                 }),
                 ..Default::default()
             })
@@ -93,6 +112,7 @@ pub async fn start_bot() {
             logger::warning("Graceful shutdown requested. Stopping Shard Manager...".to_string())
                 .prefix("Discord").send().await;
 
+            tokio::time::sleep(Duration::from_millis(500)).await;
             shard_manager.shutdown_all().await;
         });
 
@@ -106,6 +126,7 @@ pub async fn start_bot() {
     }).await;
 }
 
+// Generic methods
 pub fn create_base_embed(start_time: Option<DateTime<Utc>>) -> CreateEmbed {
     let footer_text = match start_time {
         Some(t) => {
@@ -138,4 +159,55 @@ pub fn create_error_embed(error: &str, start_time: Option<DateTime<Utc>>) -> Cre
         .title("❌ Error")
         .description(&format!("There was an error: {}", error))
         .color(0xff0000)
+}
+
+pub fn create_success_embed(message: &str, start_time: Option<DateTime<Utc>>) -> CreateEmbed {
+    create_base_embed(start_time)
+        .title("✅ Success")
+        .description(&format!("Successfully done: {}", message))
+        .color(0x00ff00)
+}
+
+async fn open_string_input_modal(
+    ctx: Context<'_>,
+    mci: &ComponentInteraction,
+    title: &str,
+    label: &str,
+    placeholder: &str,
+) -> Result<Option<String>, serenity::Error> {
+    let modal_id = format!("modal_{}", mci.id);
+    let custom_id = "input_value";
+
+    mci.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Modal(
+        CreateModal::new(&modal_id, title)
+            .components(vec![CreateActionRow::InputText(
+                CreateInputText::new(InputTextStyle::Short, label, custom_id)
+                    .placeholder(placeholder)
+                    .required(true)
+            )])
+    )).await?;
+
+    let response = ModalInteractionCollector::new(ctx.serenity_context())
+        .filter(move |m| m.data.custom_id == modal_id)
+        .timeout(Duration::from_secs(24))
+        .await;
+
+    if let Some(m) = response {
+        m.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Acknowledge).await?;
+
+        let value = m.data.components.iter()
+            .flat_map(|row| row.components.iter())
+            .find_map(|component| {
+                if let ActionRowComponent::InputText(t) = component {
+                    if t.custom_id == custom_id {
+                        return t.value.clone();
+                    }
+                }
+                None
+            });
+
+        return Ok(value);
+    }
+
+    Ok(None)
 }
