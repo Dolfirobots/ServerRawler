@@ -24,31 +24,27 @@ use crate::minecraft::{join, ping, query};
 pub async fn search_server(
     ctx: Context<'_>,
     #[description = "The server IP address"] ip: Option<String>,
-    #[description = "The server port"] port: Option<u16>
 ) -> Result<(), Error> {
     let start_time = Utc::now();
 
     let loading_embed = create_loading_embed("processing command");
     let reply = ctx.send(CreateReply::default().embed(loading_embed)).await?;
 
-    match (ip, port) {
-        // IP was given and maybe port
-        (Some(input_ip), input_port) => {
-            let (ip, port) = match input_port {
-                Some(p) => (input_ip.clone(), p),
-                // No port given, so try to parse the IP like this: IP[:PORT]
-                None => {
-                    let parts: Vec<&str> = input_ip.split(':').collect();
+    match ip {
+        // IP was given
+        (Some(input_ip)) => {
+            let (ip, port) = {
+                let parts: Vec<&str> = input_ip.split(':').collect();
 
-                    if parts.len() > 1 {
-                        let p = parts[1].parse::<u16>().unwrap_or(25565);
-                        (parts[0].to_string(), p)
-                    } else {
-                        // No port detected in the IP
-                        (input_ip.clone(), 25565)
-                    }
+                if parts.len() > 1 {
+                    let p = parts[1].parse::<u16>().unwrap_or(25565);
+                    (parts[0].to_string(), p)
+                } else {
+                    // No port detected in the IP
+                    (input_ip.clone(), 25565)
                 }
             };
+
             // Try to resolve hostname to IP
             if let Some(resolved_ip) = scanning::resolve_address(&ip, port).await {
                 match server::get_server_by_address(resolved_ip.to_string(), port).await {
@@ -80,14 +76,9 @@ pub async fn search_server(
                 reply.edit(ctx, CreateReply::default().embed(error_embed)).await?;
             }
         }
-        // Only port was given
-        (None, Some(_)) => {
-            let error_embed = create_error_embed("You need to specify an IP address to use the port.", Some(start_time));
-            reply.edit(ctx, CreateReply::default().embed(error_embed)).await?;
-        },
 
         // Nothing was given
-        (None, None) => {
+        None => {
             server_filter::open_filter_ui(ctx, reply).await?;
         }
     }
