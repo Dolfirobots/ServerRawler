@@ -172,7 +172,7 @@ pub async fn create_one_server_action(
 
     let mut collector = ComponentInteractionCollector::new(ctx.serenity_context())
         .author_id(ctx.author().id)
-        .message_id(reply.message().await?.id)
+        .message_id(message.id)
         .timeout(Duration::from_secs(240))
         .stream();
 
