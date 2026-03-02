@@ -6,10 +6,10 @@ use base64::prelude::BASE64_STANDARD;
 use chrono::{DateTime, Utc};
 use futures::StreamExt;
 use poise::ReplyHandle;
-use serenity::all::{ButtonStyle, ComponentInteraction, ComponentInteractionCollector, CreateActionRow, CreateAttachment, CreateButton, CreateEmbed, CreateInteractionResponse, CreateInteractionResponseMessage, EditAttachments, EditInteractionResponse, EditMessage};
+use serenity::all::{AutoArchiveDuration, ButtonStyle, ChannelType, ComponentInteraction, ComponentInteractionCollector, CreateActionRow, CreateAttachment, CreateButton, CreateEmbed, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, CreateThread, EditAttachments, EditInteractionResponse, EditMessage, Message};
 use crate::database::{ServerHistory, ServerInfo};
 use crate::discord::{create_base_embed, create_error_embed, create_loading_embed, Context};
-use crate::logger;
+use crate::discord::actions::paginator::base_paginator;
 use crate::minecraft::{join, ping, query};
 
 // TODO: Add error msgs
@@ -23,22 +23,26 @@ pub fn build_manage_server_action_row(disabled: bool, history: &ServerHistory) -
     vec![
         CreateActionRow::Buttons(
             vec![
-                CreateButton::new("show_plugins")
+                CreateButton::new("view_plugins")
                     .label("View Plugins")
                     .style(ButtonStyle::Secondary)
                     .emoji('🧩')
                     .disabled(disabled || !show_plugins),
-                CreateButton::new("show_mods")
+                CreateButton::new("view_mods")
                     .label("View Mods")
                     .style(ButtonStyle::Secondary)
                     .emoji('➕')
-                    .disabled(disabled || !show_mods),
-                CreateButton::new("show_player_sample")
+                    .disabled(disabled || !show_mods)
+            ]
+        ),
+        CreateActionRow::Buttons(
+            vec![
+                CreateButton::new("view_sample")
                     .label("View Sample")
                     .style(ButtonStyle::Secondary)
                     .emoji('👥')
                     .disabled(disabled || !show_player_sample),
-                CreateButton::new("show_players")
+                CreateButton::new("view_players")
                     .label("View Players")
                     .style(ButtonStyle::Secondary)
                     .emoji('👥')
@@ -52,7 +56,7 @@ pub fn build_manage_server_action_row(disabled: bool, history: &ServerHistory) -
                     .style(ButtonStyle::Primary)
                     .emoji('🔄')
                     .disabled(disabled),
-                CreateButton::new("show_history")
+                CreateButton::new("view_history")
                     .label("History")
                     .style(ButtonStyle::Primary)
                     .emoji('📖')
@@ -70,17 +74,13 @@ pub fn build_server_embed(start_time: DateTime<Utc>, info: &ServerInfo, history:
     let mut description = format!("Details for **{}:{}**", info.server_ip, info.server_port);
 
     let country = info.country.as_deref().unwrap_or("Unknown");
-    let last_seen = format!("<t:{}:R>", info.last_seen);
-    let discovered = format!("<t:{}:R>", info.discovered);
 
     embed = embed.field(
         "General",
         format!(
-            "- **Country:** `{}`\n- **Type:** `{}`\n- **Discovered:** {}\n- **Last Seen:** {}\n- **ID:** {}",
+            "- **Country:** `{}`\n- **Type:** `{}`\n- **ID:** {}",
             country,
             if info.bedrock { "Bedrock" } else { "Java" },
-            discovered,
-            last_seen,
             info.server_id.map(|id| id.to_string()).unwrap_or("Unknown".into())
         ),
         false
@@ -89,10 +89,19 @@ pub fn build_server_embed(start_time: DateTime<Utc>, info: &ServerInfo, history:
     let online = history.player_online.unwrap_or(0);
     let max = history.player_max.unwrap_or(0);
     let latency = history.latency.map(|l| format!("{:.2}ms", l)).unwrap_or_else(|| "N/A".to_string());
+    let last_seen = format!("<t:{}:R>", info.last_seen);
+    let discovered = format!("<t:{}:R>", info.discovered);
 
     embed = embed.field(
         "Stats",
-        format!("- **Online:** {}/{}\n- **Latency:** {}", online, max, latency),
+        format!(
+            "- **Online:** {}/{}\n- **Latency:** {}\n- **Discovered:** {}\n- **Last Seen:** {}",
+            online,
+            max,
+            latency,
+            discovered,
+            last_seen
+        ),
         true
     );
 
@@ -168,7 +177,7 @@ pub async fn create_one_server_action(
         .stream();
 
     while let Some(mci) = collector.next().await {
-        handle_server_action(ctx, &mci, &server_info, &server_history).await?;
+        handle_server_actions(ctx, &mci, &server_info, &server_history).await?;
     }
 
     message.edit(
@@ -179,16 +188,16 @@ pub async fn create_one_server_action(
     Ok(())
 }
 
-pub async fn handle_server_action(
+pub async fn handle_server_actions(
     ctx: Context<'_>,
-    mci: &ComponentInteraction,
+    interaction: &ComponentInteraction,
     server_info: &ServerInfo,
     server_history: &ServerHistory,
 ) -> Result<(), serenity::Error> {
-    match mci.data.custom_id.as_str() {
+    match interaction.data.custom_id.as_str() {
         "relookup" => {
             let start_time = Utc::now();
-            mci.create_response(&ctx.serenity_context().http, CreateInteractionResponse::UpdateMessage(
+            interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::UpdateMessage(
                 CreateInteractionResponseMessage::new()
                     .embed(create_loading_embed("Pinging the server (may take 6s)..."))
                     .components(vec![])
@@ -215,73 +224,207 @@ pub async fn handle_server_action(
                                 edit_resp = edit_resp.attachments(EditAttachments::new().add(CreateAttachment::bytes(decoded_bytes, "server_icon.png")));
                             }
                         }
-                        mci.edit_response(&ctx.serenity_context().http, edit_resp).await?;
+                        interaction.edit_response(&ctx.serenity_context().http, edit_resp).await?;
                         return Ok(());
                     }
                 }
             }
-            mci.edit_response(&ctx.serenity_context().http, EditInteractionResponse::new()
+            interaction.edit_response(&ctx.serenity_context().http, EditInteractionResponse::new()
                 .embed(create_error_embed("Failed to ping server", None))
                 .components(build_manage_server_action_row(false, server_history))
             ).await?;
-        },
-        "show_plugins" => {
-            let plugins = server_history.plugins.as_ref().map(|p| {
-                p.iter().map(|pl| format!("`{}` ({})", pl.name, pl.version.clone())).collect::<Vec<_>>().join("\n")
-            }).unwrap_or_else(|| "No plugins found.".to_string());
+        }
 
-            mci.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .embed(create_base_embed(None).title("Plugins").description(plugins))
-                    .ephemeral(true)
-            )).await?;
-        },
-        "show_mods" => {
-            let mods = server_history.mods.as_ref().map(|m| {
-                m.iter().map(|mo| format!("`{}`", mo.name)).collect::<Vec<_>>().join(", ")
-            }).unwrap_or_else(|| "No mods found.".to_string());
-
-            mci.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .embed(create_base_embed(None).title("Mods").description(mods))
-                    .ephemeral(true)
-            )).await?;
-        },
-        "show_player_sample" | "show_players" => {
-            let players = if mci.data.custom_id == "show_players" {
-                server_history.players.as_ref().map(|p| {
-                    p.iter()
-                        .filter_map(|pl| pl.name.as_deref())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                })
-            } else {
-                server_history.player_sample.as_ref().map(|p| {
-                    p.iter()
-                        .filter_map(|pl| pl.name.as_deref())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                })
-            }.unwrap_or_else(|| "No players found.".to_string());
-
-            let final_players = if players.is_empty() { "No players found.".to_string() } else { players };
-
-            mci.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .embed(create_base_embed(None).title("Player List").description(final_players))
-                    .ephemeral(true)
-            )).await?;
-        },
-        "show_history" => {
-            mci.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Message(
+        "view_history" => {
+            interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Message(
                 CreateInteractionResponseMessage::new()
                     .embed(create_loading_embed("coding this feature"))
                     .components(vec![])
             )).await?;
             // TODO: Give user the complete history of the server
             //  with paginator
-        },
+        }
+
+        "view_plugins" => {
+            view_plugins(
+                ctx,
+                &interaction,
+                &server_history
+            ).await?;
+        }
+
+        "view_mods" => {
+            view_mods(
+                ctx,
+                &interaction,
+                &server_history
+            ).await?;
+        }
+        "view_sample" => {
+            view_sample(
+                ctx,
+                &interaction,
+                &server_history
+            ).await?;
+        }
+
+        "view_players" => {
+            view_players(
+                ctx,
+                &interaction,
+                &server_history
+            ).await?;
+        }
         _ => {}
     }
     Ok(())
+}
+
+async fn create_view_thread(
+    ctx: Context<'_>,
+    interaction: &ComponentInteraction,
+    title: &str
+) -> Result<Message, serenity::Error> {
+    interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Acknowledge).await?;
+
+    let channel_id = interaction.channel_id;
+    let message = &interaction.message;
+
+    let thread_id = if let Some(thread) = message.thread.as_ref() {
+        thread.id
+    } else {
+        let new_thread = channel_id.create_thread_from_message(
+            &ctx.serenity_context().http,
+            message.id,
+            CreateThread::new(title)
+                .kind(ChannelType::PublicThread)
+                .auto_archive_duration(AutoArchiveDuration::OneHour)
+        ).await?;
+        new_thread.id
+    };
+
+    let target_message = thread_id.send_message(
+        &ctx.serenity_context().http,
+        CreateMessage::new()
+            .embed(create_loading_embed(&format!("loading {}...", title)))
+    ).await?;
+
+    Ok(target_message)
+}
+pub async fn view_plugins(
+    ctx: Context<'_>,
+    interaction: &ComponentInteraction,
+    history: &ServerHistory,
+) -> Result<(), serenity::Error> {
+    let mut pages = Vec::new();
+    if let Some(plugins) = &history.plugins {
+        let lines: Vec<String> = plugins.iter()
+            .map(|p| format!("- **{}** (`{}`)", p.name, p.version))
+            .collect();
+
+        for chunk in lines.chunks(15) {
+            pages.push(create_base_embed(None)
+                .title("🧩 Server Plugins")
+                .description(chunk.join("\n"))
+                .color(0x3498db));
+        }
+    }
+
+    if pages.is_empty() {
+        interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new().content("No plugins found.").ephemeral(true)
+        )).await?;
+        return Ok(());
+    }
+
+    let reply = create_view_thread(ctx, interaction, "Plugins View").await?;
+    base_paginator(ctx, reply, pages).await
+}
+
+pub async fn view_mods(
+    ctx: Context<'_>,
+    interaction: &ComponentInteraction,
+    history: &ServerHistory,
+) -> Result<(), serenity::Error> {
+    let mut pages = Vec::new();
+    if let Some(mods) = &history.mods {
+        let lines: Vec<String> = mods.iter()
+            .map(|m| format!("- **{}** (`{}`)", m.name, m.version))
+            .collect();
+
+        for chunk in lines.chunks(15) {
+            pages.push(create_base_embed(None)
+                .title("➕ Server Mods")
+                .description(chunk.join("\n"))
+                .color(0xe67e22));
+        }
+    }
+
+    if pages.is_empty() {
+        interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new().content("No mods found.").ephemeral(true)
+        )).await?;
+        return Ok(());
+    }
+
+    let reply = create_view_thread(ctx, interaction, "Mods View").await?;
+    base_paginator(ctx, reply, pages).await
+}
+
+pub async fn view_sample(
+    ctx: Context<'_>,
+    interaction: &ComponentInteraction,
+    history: &ServerHistory,
+) -> Result<(), serenity::Error> {
+    let mut pages = Vec::new();
+    if let Some(sample) = &history.player_sample {
+        let lines: Vec<String> = sample.iter()
+            .map(|p| format!("- `{}` \n(`{}`)", p.name.as_deref().unwrap_or("Unknown"), p.uuid.as_deref().unwrap_or("N/A")))
+            .collect();
+
+        for chunk in lines.chunks(15) {
+            pages.push(create_base_embed(None)
+                .title("👥 Player Sample (Ping)")
+                .description(chunk.join("\n")));
+        }
+    }
+
+    if pages.is_empty() {
+        interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new().content("No player sample found.").ephemeral(true)
+        )).await?;
+        return Ok(());
+    }
+
+    let reply = create_view_thread(ctx, interaction, "Player Sample View").await?;
+    base_paginator(ctx, reply, pages).await
+}
+
+pub async fn view_players(
+    ctx: Context<'_>,
+    interaction: &ComponentInteraction,
+    history: &ServerHistory,
+) -> Result<(), serenity::Error> {
+    let mut pages = Vec::new();
+    if let Some(players) = &history.players {
+        let lines: Vec<String> = players.iter()
+            .map(|p| format!("- `{}`", p.name.as_deref().unwrap_or("Unknown")))
+            .collect();
+
+        for chunk in lines.chunks(20) {
+            pages.push(create_base_embed(None)
+                .title("👥 Online Players (Query)")
+                .description(chunk.join("\n")));
+        }
+    }
+
+    if pages.is_empty() {
+        interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new().content("No query player list available.").ephemeral(true)
+        )).await?;
+        return Ok(());
+    }
+
+    let reply = create_view_thread(ctx, interaction, "Player List View").await?;
+    base_paginator(ctx, reply, pages).await
 }
