@@ -6,12 +6,11 @@ mod player_searcher;
 
 use poise::serenity_prelude as serenity;
 use std::env;
-use std::fmt::format;
 use std::process::exit;
 use std::time::Duration;
 use chrono::{DateTime, Utc};
 use colored_text::Colorize;
-use serenity::all::{ActionRowComponent, ComponentInteraction, ComponentInteractionDataKind, CreateActionRow, CreateEmbed, CreateEmbedFooter, CreateInputText, CreateInteractionResponse, CreateModal, InputTextStyle, ModalInteraction, ModalInteractionData};
+use serenity::all::{ActionRowComponent, ComponentInteraction, CreateActionRow, CreateEmbed, CreateEmbedFooter, CreateInputText, CreateInteractionResponse, CreateModal, InputTextStyle, ModalInteraction, ModalInteractionData};
 use serenity::collector::ModalInteractionCollector;
 use crate::{logger, manager};
 use crate::config::MainConfig;
@@ -32,9 +31,7 @@ pub async fn start_bot() {
                     Ok(t) => t,
                     Err(_) => {
                         logger::critical("Discord token not found in config or environment!".to_string())
-                            .prefix("Discord")
-                            .send()
-                            .await;
+                            .prefix("Discord").send().await;
                         return;
                     }
                 }
@@ -42,9 +39,7 @@ pub async fn start_bot() {
         },
         Err(e) => {
             logger::critical(format!("Config not initialized: {}", e.to_string()))
-                .prefix("Discord")
-                .send()
-                .await;
+                .prefix("Discord").send().await;
             exit(0);
         }
     };
@@ -189,7 +184,7 @@ async fn open_string_input_modal(
 
     let response = ModalInteractionCollector::new(ctx.serenity_context())
         .filter(move |m| m.data.custom_id == modal_id)
-        .timeout(Duration::from_secs(24))
+        .timeout(Duration::from_secs(25))
         .await;
 
     if let Some(m) = response {
