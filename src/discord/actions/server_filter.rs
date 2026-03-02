@@ -5,7 +5,7 @@ use poise::{CreateReply, ReplyHandle};
 use serenity::all::{ButtonStyle, ComponentInteraction, ComponentInteractionCollector, ComponentInteractionDataKind, CreateActionRow, CreateButton, CreateEmbed, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, CreateSelectMenu, CreateSelectMenuKind, CreateSelectMenuOption, EditInteractionResponse, EditMessage, Message};
 use serenity::all::CreateInteractionResponse::UpdateMessage;
 use crate::database::server::search_servers;
-use crate::discord::{create_base_embed, create_error_embed, create_loading_embed, create_success_embed, Context};
+use crate::discord::{create_base_embed, create_error_embed, create_loading_embed, create_success_embed, open_string_input_modal, Context};
 use crate::discord::actions::paginator::create_paged_server_view;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -98,7 +98,7 @@ impl SearchFilters {
         );
         embed = embed.field("Settings", technical_info, true);
 
-        if self.description.is_none() && self.players_online.is_none() && self.is_modded.is_none() {
+        if self.is_empty() {
             description.push_str("\n\n-# Tip: Click on the dropdown below to configure any filter!");
         }
 
@@ -121,7 +121,7 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
 
                     CreateSelectMenuOption::new("Max Players", "edit_max_players").emoji('👥'),
                     CreateSelectMenuOption::new("Online Players", "edit_online_players").emoji('👥'),
-                    CreateSelectMenuOption::new("Player Sample", "edit_player_sample").emoji('👥'),
+                    //CreateSelectMenuOption::new("Player Sample", "edit_player_sample").emoji('👥'),
 
                     CreateSelectMenuOption::new("Version", "edit_version").emoji('📶'),
                     CreateSelectMenuOption::new("Enforce Secure Chat", "edit_enforce_secure_chat").emoji('💬'),
@@ -145,6 +145,7 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
                 CreateButton::new("reset")
                     .label("Reset")
                     .style(ButtonStyle::Danger)
+                    .emoji('🗑')
                     .disabled(disabled || filter_is_none)
             ])
         ];
@@ -160,7 +161,7 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
         let collector = ComponentInteractionCollector::new(ctx.serenity_context())
             .author_id(ctx.author().id)
             .message_id(reply.message().await?.id)
-            .timeout(Duration::from_secs(120))
+            .timeout(Duration::from_secs(60))
             .next()
             .await;
 
@@ -257,26 +258,490 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
     Ok(())
 }
 
+// Edit filter handlers
+
+fn get_default_filter_buttons(disabled: bool, is_filter_none: bool) -> CreateActionRow {
+    CreateActionRow::Buttons(vec![
+        CreateButton::new("filter_back_to_home")
+            .label("Back")
+            .emoji('⬅')
+            .style(ButtonStyle::Secondary)
+            .disabled(disabled),
+        CreateButton::new("filter_unset")
+            .label("Unset")
+            .emoji('🗑')
+            .style(ButtonStyle::Danger)
+            .disabled(disabled || is_filter_none)
+    ])
+}
+
+pub async fn string_edit_filter(
+    name: &str,
+    description: &str,
+    placeholder: &str,
+
+    filter: &mut Option<StringFilter>,
+
+    msg: &mut Message,
+    ctx: Context<'_>
+) -> Result<(), serenity::Error> {
+    let get_style = |matches: bool| if matches { ButtonStyle::Success } else { ButtonStyle::Primary };
+
+    let make_components = |disabled| vec![
+        CreateActionRow::Buttons(vec![
+            CreateButton::new("filter_string_set_contains")
+                .label("Contains")
+                .style(get_style(matches!(filter, Some(StringFilter::Contains(_)))))
+                .disabled(disabled),
+            CreateButton::new("filter_string_set_equals")
+                .label("Exact Match")
+                .style(get_style(matches!(filter, Some(StringFilter::Equals(_)))))
+                .disabled(disabled),
+        ]),
+        get_default_filter_buttons(disabled, filter.is_none())
+    ];
+
+    let embed = create_base_embed(None)
+        .title(format!("Filter: {}", name))
+        .description(
+            format!(
+                "**Current:** {}\n\n{}",
+                SearchFilters::format_string_filter(filter),
+                description
+            )
+        )
+        .field("Contains", "Search for a keyword anywhere.", true)
+        .field("Exact Match", "Must be exactly what you type.", true)
+        .color(0x5865F2);
+
+    msg.edit(
+        &ctx.serenity_context().http,
+        EditMessage::new()
+            .embed(embed)
+            .components(make_components(false))
+    ).await?;
+
+    let collector = ComponentInteractionCollector::new(ctx.serenity_context())
+        .author_id(ctx.author().id)
+        .message_id(msg.id)
+        .timeout(Duration::from_secs(30))
+        .next()
+        .await;
+
+    let interaction = match collector {
+        None => { return Ok(()) }
+        Some(i) => { i }
+    };
+    let start_time = Utc::now();
+
+    match interaction.data.custom_id.as_str() {
+        "filter_back_to_home" => {
+            interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Acknowledge).await?;
+            return Ok(())
+        }
+        "filter_string_set_contains" | "filter_string_set_equals" => {
+            let is_contains = interaction.data.custom_id == "filter_string_set_contains";
+            msg.edit(
+                &ctx.serenity_context().http,
+                EditMessage::new()
+                    .embed(create_loading_embed(
+                        &format!(
+                            "waiting for your input (UI expires {})",
+                            format!(
+                                "<t:{}:R>",
+                                (Utc::now() + chrono::Duration::seconds(25)).timestamp()
+                            )
+                        )
+                    ))
+                    .components(make_components(true))
+            ).await?;
+
+            if let Ok(Some(input)) = open_string_input_modal(
+                ctx,
+                &interaction,
+                &format!("Filter: {}", name),
+                "Enter a string (This UI will expire in 25s)",
+                placeholder
+            ).await {
+                if is_contains {
+                    *filter = Some(StringFilter::Contains(input));
+                } else {
+                    *filter = Some(StringFilter::Equals(input));
+                }
+                return Ok(());
+            }
+        },
+        "filter_unset" => {
+            *filter = None;
+
+            interaction.create_response(
+                &ctx.serenity_context().http,
+                UpdateMessage(
+                    CreateInteractionResponseMessage::new()
+                        .embed(create_success_embed(&format!("Unset {} filter", name), None))
+                        .components(vec![])
+                )
+            ).await?;
+
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            return Ok(())
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+pub async fn integer_edit_filter(
+    name: &str,
+    description: &str,
+    placeholder: &str,
+    filter: &mut Option<NumberFilter>,
+    msg: &mut Message,
+    ctx: Context<'_>
+) -> Result<(), serenity::Error> {
+    let get_style = |matches: bool| if matches { ButtonStyle::Success } else { ButtonStyle::Primary };
+
+    let make_components = |disabled| vec![
+        CreateActionRow::Buttons(vec![
+            CreateButton::new("filter_set_integer_greater")
+                .label("Greater than")
+                .emoji('📈')
+                .style(get_style(matches!(filter, Some(NumberFilter::Greater(_)))))
+                .disabled(disabled),
+            CreateButton::new("filter_set_integer_less")
+                .label("Less than")
+                .emoji('📉')
+                .style(get_style(matches!(filter, Some(NumberFilter::Less(_)))))
+                .disabled(disabled),
+            CreateButton::new("filter_set_integer_equal")
+                .label("Exact Match")
+                .emoji('🎯')
+                .style(get_style(matches!(filter, Some(NumberFilter::Equal(_)))))
+                .disabled(disabled),
+            CreateButton::new("filter_set_integer_range")
+                .label("Range")
+                .emoji('↔')
+                .style(get_style(matches!(filter, Some(NumberFilter::Range(_, _)))))
+                .disabled(disabled),
+        ]),
+        get_default_filter_buttons(disabled, filter.is_none())
+    ];
+
+    let embed = create_base_embed(None)
+        .title(format!("Filter: {}", name))
+        .description(format!(
+            "**Current:** {}\n\n{}",
+            SearchFilters::format_number_filter(filter),
+            description
+        ))
+        .field("Modes", "- **Greater/Less**: Servers with more or fewer players.\n- **Exact**: Match the number precisely.\n- **Range**: Between two numbers (e.g. `10-50`)", false)
+        .color(0x5865F2);
+
+    msg.edit(
+        &ctx.serenity_context().http,
+        EditMessage::new().embed(embed).components(make_components(false))
+    ).await?;
+
+    let collector = ComponentInteractionCollector::new(ctx.serenity_context())
+        .author_id(ctx.author().id)
+        .message_id(msg.id)
+        .timeout(Duration::from_secs(30))
+        .next()
+        .await;
+
+    let interaction = match collector {
+        None => return Ok(()),
+        Some(i) => i,
+    };
+
+    match interaction.data.custom_id.as_str() {
+        "filter_back_to_home" => {
+            interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Acknowledge).await?;
+        }
+        "filter_set_integer_greater" | "filter_set_integer_less" | "filter_set_integer_equal" | "filter_set_integer_range" => {
+            msg.edit(
+                &ctx.serenity_context().http,
+                EditMessage::new()
+                    .embed(create_loading_embed(
+                        &format!(
+                            "waiting for your integer input (UI expires {})",
+                            format!(
+                                "<t:{}:R>",
+                                (Utc::now() + chrono::Duration::seconds(25)).timestamp()
+                            )
+                        )
+                    ))
+                    .components(make_components(true))
+            ).await?;
+
+            let mode = interaction.data.custom_id.clone();
+            let is_range = mode == "filter_set_integer_range";
+
+            let modal_placeholder = if is_range { "e.g. 10-50" } else { placeholder };
+            let modal_desc = if is_range { "Enter range (min-max):" } else { "Enter a number:" };
+
+            if let Ok(Some(input)) = open_string_input_modal(
+                ctx,
+                &interaction,
+                &format!("Filter: {}", name),
+                modal_desc,
+                modal_placeholder
+            ).await {
+                let input = input.trim();
+
+                if is_range {
+                    let parts: Vec<&str> = input.split(|c| c == '-' || c == ' ').filter(|s| !s.is_empty()).collect();
+                    if parts.len() == 2 {
+                        if let (Ok(min), Ok(max)) = (parts[0].parse::<i32>(), parts[1].parse::<i32>()) {
+                            *filter = Some(NumberFilter::Range(min, max));
+                        }
+                    }
+                } else if let Ok(val) = input.parse::<i32>() {
+                    *filter = match mode.as_str() {
+                        "filter_set_integer_greater" => Some(NumberFilter::Greater(val)),
+                        "filter_set_integer_less" => Some(NumberFilter::Less(val)),
+                        _ => Some(NumberFilter::Equal(val)),
+                    };
+                }
+            }
+        },
+        "filter_unset" => {
+            *filter = None;
+
+            interaction.create_response(
+                &ctx.serenity_context().http,
+                UpdateMessage(
+                    CreateInteractionResponseMessage::new()
+                        .embed(create_success_embed(&format!("Unset {} filter", name), None))
+                        .components(vec![])
+                )
+            ).await?;
+
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+pub async fn boolean_edit_filter(
+    name: &str,
+    description: &str,
+    label_true: &str,
+    label_false: &str,
+    filter: &mut Option<bool>,
+    msg: &mut Message,
+    ctx: Context<'_>
+) -> Result<(), serenity::Error> {
+    let current = *filter;
+    let get_style = |val: bool| if current == Some(val) { ButtonStyle::Success } else { ButtonStyle::Primary };
+
+    let make_components = |disabled| vec![
+        CreateActionRow::Buttons(vec![
+            CreateButton::new("filter_set_bool_true")
+                .label(label_true)
+                .style(get_style(true))
+                .disabled(disabled),
+            CreateButton::new("filter_set_bool_false")
+                .label(label_false)
+                .style(get_style(false))
+                .disabled(disabled),
+        ]),
+        get_default_filter_buttons(disabled, filter.is_none())
+    ];
+
+    let embed = create_base_embed(None)
+        .title(format!("Filter: {}", name))
+        .description(format!(
+            "**Current:** {}\n\n{}",
+            SearchFilters::format_bool_filter(current),
+            description
+        ))
+        .color(0x5865F2);
+
+    msg.edit(
+        &ctx.serenity_context().http,
+        EditMessage::new().embed(embed).components(make_components(false))
+    ).await?;
+
+    let collector = ComponentInteractionCollector::new(ctx.serenity_context())
+        .author_id(ctx.author().id)
+        .message_id(msg.id)
+        .timeout(Duration::from_secs(30))
+        .next()
+        .await;
+
+    let interaction = match collector {
+        None => return Ok(()),
+        Some(i) => i,
+    };
+
+    match interaction.data.custom_id.as_str() {
+        "filter_back_to_home" => {
+            interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Acknowledge).await?;
+        }
+        "filter_set_bool_true" | "filter_set_bool_false" => {
+            let val = interaction.data.custom_id == "filter_set_bool_true";
+            *filter = Some(val);
+
+            interaction.create_response(&ctx.serenity_context().http, UpdateMessage(
+                CreateInteractionResponseMessage::new()
+                    .embed(create_success_embed(
+                        &format!("{} set to: {}", name, if val { label_true } else { label_false }),
+                        Some(Utc::now())
+                    ))
+                    .components(vec![])
+            )).await?;
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        },
+        "filter_unset" => {
+            *filter = None;
+
+            interaction.create_response(
+                &ctx.serenity_context().http,
+                UpdateMessage(
+                    CreateInteractionResponseMessage::new()
+                        .embed(create_success_embed(&format!("Unset {} filter", name), None))
+                        .components(vec![])
+                )
+            ).await?;
+
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
 pub async fn handle_filter_selection(
     ctx: Context<'_>,
     msg: &mut Message,
     selected: &str,
-    filters: &mut SearchFilters
+    filter: &mut SearchFilters
 ) -> Result<(), serenity::Error> {
     match selected {
         "edit_description" => {
-            let current = &filters.description;
-            let get_style = |matches: bool| if matches { ButtonStyle::Success } else { ButtonStyle::Primary };
+            string_edit_filter(
+                "Description",
+                "With what pattern do you want to search a server by description?\n-# The color codes are removed in the search process",
+                "e.g. A Minecraft Server",
+                &mut filter.description,
+                msg,
+                ctx
+            ).await?;
+        }
 
+        "edit_max_players" => {
+            integer_edit_filter(
+                "Max Players",
+                "Filter by maximum player slots.",
+                "e.g. 100",
+                &mut filter.players_max,
+                msg,
+                ctx
+            ).await?;
+        }
+        "edit_online_players" => {
+            integer_edit_filter(
+                "Online Players",
+                "Filter by online players.",
+                "e.g. 5",
+                &mut filter.players_online,
+                msg,
+                ctx
+            ).await?;
+        }
+
+        "edit_version" => {
+            string_edit_filter(
+                "Version",
+                "What version should the server run?",
+                "e.g. Paper 1.21.5",
+                &mut filter.version_name,
+                msg,
+                ctx
+            ).await?;
+        }
+
+        "edit_enforce_secure_chat" => {
+            boolean_edit_filter(
+                "Enforce Secure Chat",
+                "Should the server enforce a secure (signed) chat?",
+                "Yes",
+                "No",
+                &mut filter.enforces_secure_chat,
+                msg,
+                ctx
+            ).await?;
+        }
+
+        "edit_modding" => {
+            boolean_edit_filter(
+                "Modding",
+                "Search for modded or vanilla servers.",
+                "Modded",
+                "Vanilla",
+                &mut filter.is_modded,
+                msg,
+                ctx
+            ).await?;
+        }
+
+        "edit_cracked" => {
+            boolean_edit_filter(
+                "Cracked",
+                "Allow players without premium accounts?",
+                "Cracked",
+                "Premium",
+                &mut filter.cracked,
+                msg,
+                ctx
+            ).await?;
+        }
+
+        "edit_whitelist" => {
+            boolean_edit_filter(
+                "Whitelist",
+                "Should the server have an active whitelist?",
+                "Whitelisted",
+                "Open",
+                &mut filter.whitelist,
+                msg,
+                ctx
+            ).await?;
+        }
+
+        "edit_software" => {
+            string_edit_filter(
+                "Software",
+                "How do you want to search for the server software/implementation?",
+                "e.g. Paper, Spigot, Velocity...",
+                &mut filter.software_name,
+                msg,
+                ctx
+            ).await?;
+        }
+
+        "edit_kick_message" => {
+            string_edit_filter(
+                "Kick Message",
+                "Search for servers based on the message shown when being kicked or rejected.",
+                "e.g. Whitelisted, Maintenance...",
+                &mut filter.kick_message,
+                msg,
+                ctx
+            ).await?;
+        }
+
+        "edit_plugins" => {
+            let current = &filter.plugin_name;
             let embed = create_base_embed(None)
-                .title("📝 Filter: Description")
+                .title("🧩 Filter: Plugins")
                 .color(0x5865F2)
                 .description(format!(
-                    "**Current Filter:** {}\n\nWith what pattern do you want to search a server by description?\n-# The color codes are removed in the search process",
-                    SearchFilters::format_string_filter(current)
-                ))
-                .field("Contains", "Search for a keyword anywhere in the Description.", true)
-                .field("Exact Match", "The Description must be exactly what you type.", true);
+                    "**Current Filter:** {}\n\nEnter the name of a plugin to search for (e.g., Essentials, WorldEdit).",
+                    current.as_ref().map(|s| format!("`{}`", s)).unwrap_or_else(|| "Any".to_string())
+                ));
 
             let components = |disabled| vec![
                 CreateActionRow::Buttons(vec![
@@ -285,17 +750,12 @@ pub async fn handle_filter_selection(
                         .emoji('⬅')
                         .style(ButtonStyle::Secondary)
                         .disabled(disabled),
-                    CreateButton::new("filter_set_description_contains")
-                        .label("Contains")
+                    CreateButton::new("filter_set_plugin")
+                        .label("Set Plugin")
                         .emoji('🔎')
-                        .style(get_style(matches!(current, Some(StringFilter::Contains(_)))))
+                        .style(if current.is_some() { ButtonStyle::Success } else { ButtonStyle::Primary })
                         .disabled(disabled),
-                    CreateButton::new("filter_set_description_equals")
-                        .label("Exact Match")
-                        .emoji('🎯')
-                        .style(get_style(matches!(current, Some(StringFilter::Equals(_)))))
-                        .disabled(disabled),
-                    CreateButton::new("filter_clear")
+                    CreateButton::new("filter_unset")
                         .label("Clear")
                         .emoji('🗑')
                         .style(ButtonStyle::Danger)
@@ -317,76 +777,44 @@ pub async fn handle_filter_selection(
                         mci.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Acknowledge).await?;
                         return Ok(())
                     },
-                    "filter_set_description_contains" | "filter_set_description_equals" => {
-                        let is_contains = mci.data.custom_id == "filter_set_description_contains";
+                    "filter_set_plugin" => {
                         let dur = format!("<t:{}:R>", (Utc::now() + chrono::Duration::seconds(25)).timestamp());
 
                         msg.edit(
                             &ctx.serenity_context().http,
                             EditMessage::new()
-                                .embed(create_loading_embed(
-                                    &format!(
-                                        "waiting for your input (UI expires {})",
-                                        dur
-                                    )
-                                ))
+                                .embed(create_loading_embed(&format!("Waiting for plugin name (Expires {})", dur)))
                                 .components(components(true))
                         ).await?;
 
-                        if let Ok(Some(input)) = crate::discord::open_string_input_modal(
+                        if let Ok(Some(input)) = open_string_input_modal(
                             ctx,
                             &mci,
-                            "Filter: Description",
-                            "Enter search string (This will expire in 25s)",
-                            "e.g. Survival, Semi-Vanilla..."
+                            "Filter: Plugins",
+                            "Enter plugin name:",
+                            "e.g. Essentials, LuckPerms, ViaVersion..."
                         ).await {
-                            if is_contains {
-                                filters.description = Some(StringFilter::Contains(input));
-                            } else {
-                                filters.description = Some(StringFilter::Equals(input));
-                            }
+                            filter.plugin_name = Some(input);
                             return Ok(());
                         }
                     },
-                    "filter_clear" => {
-                        let start_time = Utc::now();
-                        filters.description = None;
-
+                    "filter_unset" => {
+                        filter.plugin_name = None;
                         mci.create_response(
                             &ctx.serenity_context().http, UpdateMessage(
-                                CreateInteractionResponseMessage::new().embed(create_success_embed("Reset description filter rule", Some(start_time)))
+                                CreateInteractionResponseMessage::new()
+                                    .embed(create_success_embed("Cleared plugin filter", None))
+                                    .components(vec![])
                             )
                         ).await?;
-
                         tokio::time::sleep(Duration::from_secs(1)).await;
                         return Ok(())
                     },
                     _ => {}
                 }
             }
-        },
+        }
 
-        "edit_max_players" => {
-
-        },
-        "edit_online_players" => {
-
-        },
-        "edit_player_sample" => {
-
-        },
-
-        "edit_version" => {},
-        "edit_enforce_secure_chat" => {},
-
-        "edit_modding" => {},
-
-        "edit_plugins" => {},
-        "edit_software" => {},
-
-        "edit_kick_message" => {},
-        "edit_cracked" => {},
-        "edit_whitelist" => {},
         _ => {}
     }
 
