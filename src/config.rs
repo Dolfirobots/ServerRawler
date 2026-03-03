@@ -114,12 +114,12 @@ pub struct GeneralConfig {
     pub query_timeout: u64,
     pub join_timeout: u64,
     pub do_uuid_fetch: bool,
-    pub default_ports: Vec<u16>, // TODO
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct DiscordConfig {
-    pub token: Option<String>
+    pub token: Option<String>,
+    pub admin_roles: Option<Vec<u64>>
 }
 
 // Process code
@@ -159,12 +159,6 @@ impl MainConfig {
         }
         if !(80..=15000).contains(&general.join_timeout) {
             errors.push(InvalidValue("general.join_timeout".into(), "Keep it between 80ms and 15s.".into()));
-        }
-
-        if general.default_ports.is_empty() {
-            errors.push(MissingRequired("general.default_ports".into()));
-        } else if general.default_ports.iter().any(|&p| p == 0) {
-            errors.push(InvalidValue("general.default_ports".into(), "Port 0 is not allowed.".into()));
         }
 
         // [crawler]
@@ -308,10 +302,10 @@ impl Default for MainConfig {
                 query_timeout: 3000,
                 join_timeout: 3000,
                 do_uuid_fetch: true,
-                default_ports: vec![25565],
             },
             discord: DiscordConfig {
-                token: None
+                token: None,
+                admin_roles: None
             }
         }
     }
