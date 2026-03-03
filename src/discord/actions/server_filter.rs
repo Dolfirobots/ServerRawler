@@ -200,7 +200,7 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
                                 .embed(create_success_embed(&format!("Found {} servers", servers.len()), Some(start_time)))
                         ).await?;
 
-                        create_paged_server_view(ctx, reply, &servers).await?;
+                        create_paged_server_view(ctx, reply.message().await?.into_owned(), servers).await?;
                     },
                     // No server found
                     Ok(None) => {
