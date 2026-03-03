@@ -29,7 +29,7 @@ pub enum ProcessError {
 }
 
 impl ConfigError {
-    pub fn to_string(&self) -> (String) {
+    pub fn to_string(&self) -> String {
         let highlight = DefaultColor::Highlight.hex();
         match self {
             MissingOptional(field, default) => format!(
@@ -55,7 +55,7 @@ impl ConfigError {
 }
 
 impl ProcessError {
-    pub fn to_string(&self) -> (String) {
+    pub fn to_string(&self) -> String {
         let highlight = DefaultColor::Highlight.hex();
         match self {
             Io(error) => format!(
