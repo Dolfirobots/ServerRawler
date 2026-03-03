@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use colored_text::Colorize;
 use futures::StreamExt;
 use poise::{CreateReply, ReplyHandle};
-use serenity::all::{ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateInteractionResponse, CreateSelectMenu, CreateSelectMenuKind, CreateSelectMenuOption, ReactionType};
+use serenity::all::{ButtonStyle, CreateActionRow, CreateButton, CreateInteractionResponse};
 use serenity::builder::{CreateInteractionResponseMessage, EditInteractionResponse};
 use serenity::collector::ComponentInteractionCollector;
 use crate::discord::{actions, create_base_embed, create_error_embed, create_loading_embed, Context, Error};
@@ -32,7 +32,7 @@ pub async fn search_server(
 
     match ip {
         // IP was given
-        (Some(input_ip)) => {
+        Some(input_ip) => {
             let (ip, port) = {
                 let parts: Vec<&str> = input_ip.split(':').collect();
 
