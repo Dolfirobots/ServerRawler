@@ -1,16 +1,17 @@
 pub mod server_searcher;
-pub mod util_commands;
 pub mod stats_command;
 pub mod actions;
 mod player_searcher;
+mod cleanup_command;
 
-use poise::serenity_prelude as serenity;
+use poise::{serenity_prelude as serenity, PrefixFrameworkOptions};
 use std::env;
 use std::process::exit;
 use std::time::Duration;
 use chrono::{DateTime, Utc};
 use colored_text::Colorize;
 use serenity::all::{ActionRowComponent, ComponentInteraction, CreateActionRow, CreateEmbed, CreateEmbedFooter, CreateInputText, CreateInteractionResponse, CreateModal, InputTextStyle, ModalInteraction, ModalInteractionData};
+use serenity::client::ClientBuilder;
 use serenity::collector::ModalInteractionCollector;
 use crate::{logger, manager};
 use crate::config::MainConfig;
@@ -45,33 +46,92 @@ pub async fn start_bot() {
     };
 
     manager::TaskManager::spawn("discord_bot", |token_cancel| async move {
+
         let framework = poise::Framework::builder()
+            // Config
             .options(poise::FrameworkOptions {
                 commands: vec![
                     server_searcher::search_server(),
                     player_searcher::search_player(),
+                    cleanup_command::cleanup()
                 ],
+                prefix_options: PrefixFrameworkOptions {
+                    prefix: Some("!".into()),
+                    ..Default::default()
+                },
                 on_error: |error| Box::pin(async move {
                     match error {
                         poise::FrameworkError::Command { error, ctx, .. } => {
                             logger::error(format!(
                                 "Command '{}' failed: {}",
                                 ctx.command().name.hex(DefaultColor::Highlight.hex()),
-                                error.hex(DefaultColor::Highlight.hex())
+                                error.to_string().hex(DefaultColor::Highlight.hex())
                             )).prefix("Discord").send().await;
                         },
                         poise::FrameworkError::Setup { error, .. } => {
-                            logger::error(format!("Setup failed: {}", error.hex(DefaultColor::Highlight.hex())))
-                                .prefix("Discord").send().await;
+                            logger::error(format!(
+                                "Setup failed: {}",
+                                error.hex(DefaultColor::Highlight.hex())
+                            )).prefix("Discord").send().await;
+                        },
+                        poise::FrameworkError::CommandCheckFailed { error, ctx, .. } => {
+                            let error_msg = error.map_or("Check failed without specific error".to_string(), |e| e.to_string());
+                            logger::warning(format!(
+                                "Check failed for command '{}': {}",
+                                ctx.command().name.hex(DefaultColor::Highlight.hex()),
+                                error_msg.hex(DefaultColor::Highlight.hex())
+                            )).prefix("Discord").send().await;
+                        },
+                        poise::FrameworkError::MissingBotPermissions { missing_permissions, ctx, .. } => {
+                            logger::error(format!(
+                                "Bot is missing permissions for '{}': {:?}",
+                                ctx.command().name.hex(DefaultColor::Highlight.hex()),
+                                missing_permissions
+                            )).prefix("Discord").send().await;
+                        },
+                        poise::FrameworkError::MissingUserPermissions { missing_permissions, ctx, .. } => {
+                            logger::warning(format!(
+                                "User lacks permissions for '{}': {:?}",
+                                ctx.command().name.hex(DefaultColor::Highlight.hex()),
+                                missing_permissions
+                            )).prefix("Discord").send().await;
+                        },
+                        poise::FrameworkError::NotAnOwner { ctx, .. } => {
+                            logger::warning(format!(
+                                "User tried to run owner-only command '{}'",
+                                ctx.command().name.hex(DefaultColor::Highlight.hex())
+                            )).prefix("Discord").send().await;
+                        },
+                        poise::FrameworkError::UnknownCommand { msg_content, .. } => {
+                            logger::info(
+                                format!(
+                                    "Unknown command received: {}",
+                                    msg_content.hex(DefaultColor::Highlight.hex())
+                                )
+                            ).prefix("Discord").send().await;
+                        },
+                        poise::FrameworkError::ArgumentParse { error, input, ctx, .. } => {
+                            let input_str = input.unwrap_or_else(|| "none".to_string());
+                            logger::warning(format!(
+                                "Invalid arguments for '{}' (Input: '{}'): {}",
+                                ctx.command().name.hex(DefaultColor::Highlight.hex()),
+                                input_str.hex(DefaultColor::Highlight.hex()),
+                                error
+                            )).prefix("Discord").send().await;
                         },
                         other => {
-                            logger::error(format!("Framework error: {}", format!("{:?}", other).hex(DefaultColor::Highlight.hex())))
-                                .prefix("Discord").send().await;
+                            logger::error(
+                                format!(
+                                    "Framework error: {}",
+                                    format!("{:?}", other).hex(DefaultColor::Highlight.hex())
+                                )
+                            ).prefix("Discord").send().await;
                         }
                     }
                 }),
                 ..Default::default()
             })
+
             .setup(|ctx, ready, framework| {
                 Box::pin(async move {
                     let bot_name = &ready.user.name;
@@ -94,7 +154,12 @@ pub async fn start_bot() {
             })
             .build();
 
-        let mut client = serenity::ClientBuilder::new(token, serenity::GatewayIntents::non_privileged())
+        let mut client = ClientBuilder::new(
+            token,
+            serenity::GatewayIntents::non_privileged()
+                | serenity::GatewayIntents::GUILD_MESSAGES
+                | serenity::GatewayIntents::MESSAGE_CONTENT
+        )
             .framework(framework)
             .await
             .expect("Failed to create client");
