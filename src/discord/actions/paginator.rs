@@ -1,12 +1,12 @@
+use std::net::Ipv4Addr;
+use std::str::FromStr;
 use std::time::Duration;
-use base64::Engine;
-use chrono::{DateTime, Utc};
-use futures::StreamExt;
-use poise::{CreateReply, ReplyHandle};
-use serenity::all::{ButtonStyle, ComponentInteractionCollector, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter};
+use chrono::Utc;
+use serenity::all::{ButtonStyle, ComponentInteractionCollector, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, CreateInteractionResponse, CreateInteractionResponseMessage, EditAttachments, EditInteractionResponse, EditMessage, Message};
 use crate::database::{ServerHistory, ServerInfo};
-use crate::discord::actions::server::{build_manage_server_action_row, build_server_embed};
-use crate::discord::{create_base_embed, Context};
+use crate::discord::actions::server::{build_manage_server_action_row, build_server_embed, convert_img_for_discord, view_mods, view_players, view_plugins, view_sample};
+use crate::discord::{create_error_embed, create_loading_embed, Context, Error};
+use crate::minecraft::{join, ping, query};
 
 fn create_action_row(page: usize, total: usize, disabled: bool) -> Vec<CreateActionRow> {
     vec![CreateActionRow::Buttons(vec![
@@ -29,11 +29,12 @@ fn create_action_row(page: usize, total: usize, disabled: bool) -> Vec<CreateAct
     ])]
 }
 
-async fn base_paginator(
-    ctx: Context<'_>,
-    reply: ReplyHandle<'_>,
+pub async fn base_paginator(
+    ctx: serenity::all::Context,
+    author_id: serenity::all::UserId,
+    mut message: Message,
     pages: Vec<CreateEmbed>,
-) -> Result<(), serenity::Error> {
+) -> Result<(), Error> {
     let mut current_page = 0;
     let total_pages = pages.len();
 
@@ -49,15 +50,15 @@ async fn base_paginator(
     loop {
         let current_embed = get_page_embed(current_page, &pages);
 
-        reply.edit(ctx, CreateReply::default()
+        message.edit(&ctx, EditMessage::default()
             .embed(current_embed.clone())
             .components(create_action_row(current_page, total_pages, false))
         ).await?;
 
-        let interaction = ComponentInteractionCollector::new(ctx.serenity_context())
-            .author_id(ctx.author().id)
-            .message_id(reply.message().await?.id)
-            .timeout(Duration::from_secs(60))
+        let interaction = ComponentInteractionCollector::new(&ctx)
+            .author_id(author_id)
+            .message_id(message.id)
+            .timeout(Duration::from_secs(35))
             .next()
             .await;
 
@@ -72,15 +73,15 @@ async fn base_paginator(
             "next" => if current_page < total_pages - 1 { current_page += 1 },
             "last" => current_page = total_pages - 1,
             _ => {
-                mci.defer(&ctx.serenity_context()).await?;
+                mci.defer(&ctx).await?;
                 continue;
             }
         }
 
         mci.create_response(
-            &ctx.serenity_context(),
-            serenity::all::CreateInteractionResponse::UpdateMessage(
-                serenity::all::CreateInteractionResponseMessage::new()
+            &ctx,
+            CreateInteractionResponse::UpdateMessage(
+                CreateInteractionResponseMessage::new()
                     .embed(get_page_embed(current_page, &pages))
                     .components(create_action_row(current_page, total_pages, false))
             )
@@ -88,120 +89,229 @@ async fn base_paginator(
     }
 
     let final_embed = get_page_embed(current_page, &pages);
-    reply.edit(ctx, CreateReply::default()
-        .embed(final_embed)
-        .components(create_action_row(current_page, total_pages, true))
+
+    message.edit(
+        ctx, EditMessage::default()
+            .embed(final_embed)
+            .components(create_action_row(current_page, total_pages, true))
     ).await?;
 
     Ok(())
 }
 
-// pub async fn create_paged_server_view(
-//     ctx: Context<'_>,
-//     reply: ReplyHandle<'_>,
-//     servers: &Vec<(ServerInfo, ServerHistory)>
-// ) -> Result<(), serenity::Error> {
-//     if servers.is_empty() {
-//         reply.edit(ctx, CreateReply::default()
-//             .embed(create_base_embed(None)
-//             .title("🔎 Search Results")
-//             .description("No servers found matching your filters.")
-//             .color(0xff0000)
-//             )
-//         ).await?;
-//         return Ok(());
-//     }
-//
-//     let start_time = Utc::now();
-//
-//     let pages: Vec<CreateEmbed> = servers
-//         .iter()
-//         .map(|(info, history)| build_server_embed(start_time, info, history))
-//         .collect();
-//     base_paginator(ctx, reply, pages).await
-// }
-
 pub async fn create_paged_server_view(
     ctx: Context<'_>,
-    reply: ReplyHandle<'_>,
-    servers: &Vec<(ServerInfo, ServerHistory)>
-) -> Result<(), serenity::Error> {
-    if servers.is_empty() {
-        reply.edit(ctx, CreateReply::default()
-            .embed(crate::discord::create_base_embed(None)
-                .title("🔎 Search Results")
-                .description("No servers found matching your filters.")
-                .color(0xff0000))
-        ).await?;
-        return Ok(());
-    }
-
+    mut message: Message,
+    mut servers: Vec<(ServerInfo, ServerHistory)>,
+) -> Result<(), Error> {
     let mut current_page = 0;
     let total_pages = servers.len();
-    let start_time = Utc::now();
+
+    let get_page_embed = |idx: usize, info: &ServerInfo, history: &ServerHistory| {
+        build_server_embed(Utc::now(), info, history)
+            .footer(CreateEmbedFooter::new(format!(
+                "ServerRawler {} • Page {}/{}",
+                crate::get_version_raw(),
+                idx + 1,
+                total_pages
+            )))
+    };
+
+    let (info, history) = &servers[current_page];
+    let current_embed = get_page_embed(current_page, info, history);
+
+    let mut components = build_manage_server_action_row(false, history);
+    components.extend(create_action_row(current_page, total_pages, false));
+
+    let mut response = EditMessage::default()
+        .embed(current_embed.clone())
+        .components(components)
+        .attachments(EditAttachments::new());
+
+    if let Some(attachment) = convert_img_for_discord(history) {
+        response = response.attachments(EditAttachments::new().add(attachment));
+    }
+
+    message.edit(ctx, response).await?;
 
     loop {
-        let (info, history) = &servers[current_page];
-
-        let mut embed = build_server_embed(start_time, info, history);
-        embed = embed.footer(CreateEmbedFooter::new(format!(
-            "ServerRawler {} • Page {}/{}",
-            crate::get_version_raw(),
-            current_page + 1,
-            total_pages
-        )));
-
-        let mut components = build_manage_server_action_row(false, history);
-        components.extend(create_action_row(current_page, total_pages, false));
-
-        let mut edit_reply = CreateReply::default()
-            .embed(embed)
-            .components(components);
-
-        if let Some(base64_icon) = &history.icon {
-            if let Ok(decoded_bytes) = base64::prelude::BASE64_STANDARD.decode(base64_icon.trim()) {
-                edit_reply = edit_reply.attachment(serenity::all::CreateAttachment::bytes(decoded_bytes, "server_icon.png"));
-            }
-        }
-
-        reply.edit(ctx, edit_reply).await?;
-
+        // This is waiting of an interaction, or if the timeout runs out
         let interaction = ComponentInteractionCollector::new(ctx.serenity_context())
             .author_id(ctx.author().id)
-            .message_id(reply.message().await?.id)
+            .message_id(message.id)
             .timeout(Duration::from_secs(60))
             .next()
             .await;
 
-        let mci = match interaction {
+        let interaction = match interaction {
             Some(i) => i,
-            None => break,
+            None => break, // Timeout
         };
 
-        match mci.data.custom_id.as_str() {
-            "first" => current_page = 0,
-            "prev" => if current_page > 0 { current_page -= 1 },
-            "next" => if current_page < total_pages - 1 { current_page += 1 },
-            "last" => current_page = total_pages - 1,
+        let (info, history) = &servers[current_page];
 
-            "relookup" | "show_plugins" | "show_mods" | "show_player_sample" | "show_players" => {
-                // TODO: refresh server view
-                //crate::discord::actions::server::handle_server_interaction(ctx, &mci, info, history).await?;
-                continue;
+        match interaction.data.custom_id.as_str() {
+            "first" => {
+                current_page = 0;
+                
+                interaction.create_response(
+                    &ctx.serenity_context().http,
+                    CreateInteractionResponse::Acknowledge
+                ).await?;
+            },
+            "prev" => {
+                if current_page > 0 { current_page -= 1 }
+
+                interaction.create_response(
+                    &ctx.serenity_context().http,
+                    CreateInteractionResponse::Acknowledge
+                ).await?;
+            },
+            "next" => {
+                if current_page < total_pages - 1 { current_page += 1 }
+
+                interaction.create_response(
+                    &ctx.serenity_context().http,
+                    CreateInteractionResponse::Acknowledge
+                ).await?;
+            },
+            "last" => {
+                current_page = total_pages - 1;
+
+                interaction.create_response(
+                    &ctx.serenity_context().http,
+                    CreateInteractionResponse::Acknowledge
+                ).await?;
+            },
+
+            "view_plugins" => {
+                view_plugins(
+                    ctx,
+                    &interaction,
+                    &info,
+                    &history
+                ).await?;
+
+                continue
             }
-            _ => {
-                mci.defer(&ctx.serenity_context().http).await?;
-                continue;
+
+            "view_mods" => {
+                view_mods(
+                    ctx,
+                    &interaction,
+                    &info,
+                    &history
+                ).await?;
+
+                continue
             }
+            
+            "view_sample" => {
+                view_sample(
+                    ctx,
+                    &interaction,
+                    &info,
+                    &history
+                ).await?;
+
+                continue
+            }
+
+            "view_players" => {
+                view_players(
+                    ctx,
+                    &interaction,
+                    &info,
+                    &history
+                ).await?;
+
+                continue
+            }
+
+            "relookup" => {
+                interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::UpdateMessage(
+                    CreateInteractionResponseMessage::new()
+                        .embed(create_loading_embed("Pinging the server (may take 6s)..."))
+                        .components(vec![])
+                )).await?;
+
+                if let Ok(ip) = Ipv4Addr::from_str(info.server_ip.as_str()) {
+                    if let Ok(ping_result) = ping::execute_ping(ip, info.server_port, 0, Duration::from_secs(3)).await {
+                        let query = query::execute_query(ip, info.server_port, Duration::from_secs(3), true).await.ok();
+                        let protocol = ping_result.protocol_version.or(history.version_protocol).unwrap_or(767);
+                        let join = join::execute_join_check(ip, info.server_port, Duration::from_secs(3), "ServerRawler", protocol).await.ok();
+
+                        let (mut new_info, new_history) = crate::database::parse_server(ip, info.server_port, ping_result, query, join);
+
+                        if crate::database::server::insert_servers(&vec![(new_info.clone(), new_history.clone())]).await.is_ok() {
+                            new_info.discovered = info.discovered;
+                            new_info.server_id = info.server_id;
+
+                            servers[current_page] = (new_info, new_history);
+                        }
+                    }
+                } else {
+                    interaction.edit_response(
+                        &ctx.serenity_context().http,
+                        EditInteractionResponse::new()
+                            .embed(create_error_embed("Failed to ping server", None))
+                            .components(vec![])
+                    ).await?;
+
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    continue
+                }
+
+            }
+
+            "history" => {
+                interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .embed(create_loading_embed("coding this feature"))
+                        .components(vec![])
+                )).await?;
+                // TODO: Give user the complete history of the server
+                //  with paginator
+            }
+
+            _ => continue
         }
+
+        let (info, history) = &servers[current_page];
+        let current_embed = get_page_embed(current_page, info, history);
+
+        let mut components = build_manage_server_action_row(false, history);
+        components.extend(create_action_row(current_page, total_pages, false));
+
+        let mut response = EditInteractionResponse::new()
+            .embed(current_embed)
+            .components(components);
+
+        if let Some(attachment) = convert_img_for_discord(history) {
+            response = response.attachments(
+                EditAttachments::new().add(attachment)
+            );
+        } else {
+            response = response.clear_attachments();
+        }
+
+        interaction.edit_response(
+            &ctx.serenity_context(),
+            response
+        ).await?;
     }
 
     let (info, history) = &servers[current_page];
+    let current_embed = get_page_embed(current_page, info, history);
 
-    let mut final_components = build_manage_server_action_row(true, history);
-    final_components.extend(create_action_row(current_page, total_pages, true));
+    let mut components = build_manage_server_action_row(true, history);
+    components.extend(create_action_row(current_page, total_pages, true));
 
-    reply.edit(ctx, CreateReply::default().components(final_components)).await?;
+    message.edit(
+        ctx, EditMessage::default()
+            .embed(current_embed.clone())
+            .components(components)
+    ).await?;
 
     Ok(())
 }
