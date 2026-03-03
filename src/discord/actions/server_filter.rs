@@ -1,11 +1,11 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use chrono::{DateTime, Utc};
 use futures::StreamExt;
 use poise::{CreateReply, ReplyHandle};
-use serenity::all::{ButtonStyle, ComponentInteraction, ComponentInteractionCollector, ComponentInteractionDataKind, CreateActionRow, CreateButton, CreateEmbed, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, CreateSelectMenu, CreateSelectMenuKind, CreateSelectMenuOption, EditInteractionResponse, EditMessage, Message};
+use serenity::all::{ButtonStyle, ComponentInteractionCollector, ComponentInteractionDataKind, CreateActionRow, CreateButton, CreateEmbed, CreateInteractionResponse, CreateInteractionResponseMessage, CreateSelectMenu, CreateSelectMenuKind, CreateSelectMenuOption, EditInteractionResponse, EditMessage, Message};
 use serenity::all::CreateInteractionResponse::UpdateMessage;
 use crate::database::server::search_servers;
-use crate::discord::{create_base_embed, create_error_embed, create_loading_embed, create_success_embed, open_string_input_modal, Context};
+use crate::discord::{create_base_embed, create_error_embed, create_loading_embed, create_success_embed, open_string_input_modal, Context, Error};
 use crate::discord::actions::paginator::create_paged_server_view;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -110,7 +110,7 @@ impl SearchFilters {
     }
 }
 
-pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<(), serenity::Error> {
+pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<(), Error> {
     let mut filters = SearchFilters::default();
 
     let make_home_action_row = |disabled, filter_is_none|
@@ -284,7 +284,7 @@ pub async fn string_edit_filter(
 
     msg: &mut Message,
     ctx: Context<'_>
-) -> Result<(), serenity::Error> {
+) -> Result<(), Error> {
     let get_style = |matches: bool| if matches { ButtonStyle::Success } else { ButtonStyle::Primary };
 
     let make_components = |disabled| vec![
@@ -398,7 +398,7 @@ pub async fn integer_edit_filter(
     filter: &mut Option<NumberFilter>,
     msg: &mut Message,
     ctx: Context<'_>
-) -> Result<(), serenity::Error> {
+) -> Result<(), Error> {
     let get_style = |matches: bool| if matches { ButtonStyle::Success } else { ButtonStyle::Primary };
 
     let make_components = |disabled| vec![
@@ -532,7 +532,7 @@ pub async fn boolean_edit_filter(
     filter: &mut Option<bool>,
     msg: &mut Message,
     ctx: Context<'_>
-) -> Result<(), serenity::Error> {
+) -> Result<(), Error> {
     let current = *filter;
     let get_style = |val: bool| if current == Some(val) { ButtonStyle::Success } else { ButtonStyle::Primary };
 
@@ -618,7 +618,7 @@ pub async fn handle_filter_selection(
     msg: &mut Message,
     selected: &str,
     filter: &mut SearchFilters
-) -> Result<(), serenity::Error> {
+) -> Result<(), Error> {
     match selected {
         "edit_description" => {
             string_edit_filter(
