@@ -127,12 +127,12 @@ async fn server_not_found_action(
         .timeout(Duration::from_secs(120))
         .stream();
 
-    while let Some(mci) = collector.next().await {
-        match mci.data.custom_id.as_str() {
+    while let Some(interaction) = collector.next().await {
+        match interaction.data.custom_id.as_str() {
             "lookup_server" => {
                 let start_time = Utc::now();
 
-                mci.create_response(&ctx.serenity_context().http, CreateInteractionResponse::UpdateMessage(
+                interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::UpdateMessage(
                     CreateInteractionResponseMessage::new()
                         .embed(create_loading_embed("pinging the server (May take 6 sec)"))
                         .components(vec![])
@@ -189,7 +189,7 @@ async fn server_not_found_action(
                     }
                 }
 
-                mci.edit_response(&ctx.serenity_context().http, EditInteractionResponse::new()
+                interaction.edit_response(&ctx.serenity_context().http, EditInteractionResponse::new()
                     .embed(create_error_embed("Lookup failed. Is the server online?", None))
                     .components(make_action_row(false))
                 ).await?;
