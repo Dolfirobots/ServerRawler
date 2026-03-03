@@ -1,3 +1,4 @@
+use std::fmt::format;
 use std::net::Ipv4Addr;
 use std::str::FromStr;
 use std::time::Duration;
@@ -8,11 +9,21 @@ use futures::StreamExt;
 use poise::ReplyHandle;
 use serenity::all::{AutoArchiveDuration, ButtonStyle, ChannelType, ComponentInteraction, ComponentInteractionCollector, CreateActionRow, CreateAttachment, CreateButton, CreateEmbed, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, CreateThread, EditAttachments, EditInteractionResponse, EditMessage, Message};
 use crate::database::{ServerHistory, ServerInfo};
-use crate::discord::{create_base_embed, create_error_embed, create_loading_embed, Context};
+use crate::discord::{create_base_embed, create_error_embed, create_loading_embed, Context, Error};
 use crate::discord::actions::paginator::base_paginator;
+use crate::logger;
 use crate::minecraft::{join, ping, query};
 
 // TODO: Add error msgs
+
+pub fn convert_img_for_discord(server_history: &ServerHistory) -> Option<CreateAttachment> {
+    if let Some(base64_icon) = server_history.icon.as_ref() {
+        if let Ok(decoded_bytes) = BASE64_STANDARD.decode(base64_icon.trim()) {
+            return Some(CreateAttachment::bytes(decoded_bytes, "server_icon.png"));
+        }
+    }
+    None
+}
 
 pub fn build_manage_server_action_row(disabled: bool, history: &ServerHistory) -> Vec<CreateActionRow> {
     let show_plugins = history.plugins.as_ref().map_or(0, |p| p.len()) > 0;
@@ -152,14 +163,11 @@ pub async fn create_one_server_action(
     reply: ReplyHandle<'_>,
     server_info: ServerInfo,
     server_history: ServerHistory
-) -> Result<(), serenity::Error> {
+) -> Result<(), Error> {
     let mut response = EditMessage::new().embed(build_server_embed(start_time, &server_info, &server_history));
 
-    if let Some(base64_icon) = &server_history.icon {
-        if let Ok(decoded_bytes) = BASE64_STANDARD.decode(base64_icon.trim()) {
-            let attachment = CreateAttachment::bytes(decoded_bytes, "server_icon.png");
-            response = response.attachments(EditAttachments::new().add(attachment.clone()));
-        }
+    if let Some(attachment) = convert_img_for_discord(&server_history) {
+        response = response.attachments(EditAttachments::new().add(attachment));
     }
 
     // Using the message.edit() because reply.edit() doesn't works correctly with attachments
@@ -193,11 +201,11 @@ pub async fn handle_server_actions(
     interaction: &ComponentInteraction,
     server_info: &ServerInfo,
     server_history: &ServerHistory,
-) -> Result<(), serenity::Error> {
+) -> Result<(), Error> {
     match interaction.data.custom_id.as_str() {
         "relookup" => {
             let start_time = Utc::now();
-            interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::UpdateMessage(
+            interaction.create_response(&ctx.http(), CreateInteractionResponse::UpdateMessage(
                 CreateInteractionResponseMessage::new()
                     .embed(create_loading_embed("Pinging the server (may take 6s)..."))
                     .components(vec![])
@@ -215,23 +223,29 @@ pub async fn handle_server_actions(
                         new_info.discovered = server_info.discovered;
                         new_info.server_id = server_info.server_id;
 
-                        let mut edit_resp = EditInteractionResponse::new()
+                        let mut response = EditInteractionResponse::new()
                             .embed(build_server_embed(start_time, &new_info, &new_history))
                             .components(build_manage_server_action_row(false, &new_history));
 
-                        if let Some(base64_icon) = &new_history.icon {
-                            if let Ok(decoded_bytes) = BASE64_STANDARD.decode(base64_icon.trim()) {
-                                edit_resp = edit_resp.attachments(EditAttachments::new().add(CreateAttachment::bytes(decoded_bytes, "server_icon.png")));
-                            }
+                        if let Some(attachment) = convert_img_for_discord(&server_history) {
+                            response = response.attachments(EditAttachments::new().add(attachment));
                         }
-                        interaction.edit_response(&ctx.serenity_context().http, edit_resp).await?;
+
+                        interaction.edit_response(
+                            &ctx.serenity_context().http,
+                            response
+                        ).await?;
+
                         return Ok(());
                     }
                 }
             }
-            interaction.edit_response(&ctx.serenity_context().http, EditInteractionResponse::new()
-                .embed(create_error_embed("Failed to ping server", None))
-                .components(build_manage_server_action_row(false, server_history))
+
+            interaction.edit_response(
+                &ctx.serenity_context().http,
+                EditInteractionResponse::new()
+                    .embed(create_error_embed("Failed to ping server", None))
+                    .components(build_manage_server_action_row(false, server_history))
             ).await?;
         }
 
@@ -249,6 +263,7 @@ pub async fn handle_server_actions(
             view_plugins(
                 ctx,
                 &interaction,
+                &server_info,
                 &server_history
             ).await?;
         }
@@ -257,6 +272,7 @@ pub async fn handle_server_actions(
             view_mods(
                 ctx,
                 &interaction,
+                &server_info,
                 &server_history
             ).await?;
         }
@@ -264,6 +280,7 @@ pub async fn handle_server_actions(
             view_sample(
                 ctx,
                 &interaction,
+                &server_info,
                 &server_history
             ).await?;
         }
@@ -272,6 +289,7 @@ pub async fn handle_server_actions(
             view_players(
                 ctx,
                 &interaction,
+                &server_info,
                 &server_history
             ).await?;
         }
@@ -284,7 +302,7 @@ async fn create_view_thread(
     ctx: Context<'_>,
     interaction: &ComponentInteraction,
     title: &str
-) -> Result<Message, serenity::Error> {
+) -> Result<Message, Error> {
     interaction.create_response(&ctx.serenity_context().http, CreateInteractionResponse::Acknowledge).await?;
 
     let channel_id = interaction.channel_id;
@@ -296,7 +314,7 @@ async fn create_view_thread(
         let new_thread = channel_id.create_thread_from_message(
             &ctx.serenity_context().http,
             message.id,
-            CreateThread::new(title)
+            CreateThread::new("Detailed information's")
                 .kind(ChannelType::PublicThread)
                 .auto_archive_duration(AutoArchiveDuration::OneHour)
         ).await?;
@@ -314,8 +332,9 @@ async fn create_view_thread(
 pub async fn view_plugins(
     ctx: Context<'_>,
     interaction: &ComponentInteraction,
+    info: &ServerInfo,
     history: &ServerHistory,
-) -> Result<(), serenity::Error> {
+) -> Result<(), Error> {
     let mut pages = Vec::new();
     if let Some(plugins) = &history.plugins {
         let lines: Vec<String> = plugins.iter()
@@ -324,8 +343,13 @@ pub async fn view_plugins(
 
         for chunk in lines.chunks(15) {
             pages.push(create_base_embed(None)
-                .title("🧩 Server Plugins")
-                .description(chunk.join("\n"))
+                .title("🧩 Server Plugins", )
+                .description(format!(
+                    "-# {}:{}\n{}",
+                    info.server_ip,
+                    info.server_port,
+                    chunk.join("\n")
+                ))
                 .color(0x3498db));
         }
     }
@@ -337,15 +361,26 @@ pub async fn view_plugins(
         return Ok(());
     }
 
-    let reply = create_view_thread(ctx, interaction, "Plugins View").await?;
-    base_paginator(ctx, reply, pages).await
+    let message = create_view_thread(ctx, interaction, "Plugins View").await?;
+
+    let shard_ctx = ctx.serenity_context().clone();
+    let author_id = ctx.author().id;
+
+    tokio::spawn(async move {
+        if let Err(e) = base_paginator(shard_ctx, author_id, message, pages).await {
+            logger::error(format!("Paginator error: {:?}", e));
+        }
+    });
+
+    Ok(())
 }
 
 pub async fn view_mods(
     ctx: Context<'_>,
     interaction: &ComponentInteraction,
+    info: &ServerInfo,
     history: &ServerHistory,
-) -> Result<(), serenity::Error> {
+) -> Result<(), Error> {
     let mut pages = Vec::new();
     if let Some(mods) = &history.mods {
         let lines: Vec<String> = mods.iter()
@@ -355,7 +390,12 @@ pub async fn view_mods(
         for chunk in lines.chunks(15) {
             pages.push(create_base_embed(None)
                 .title("➕ Server Mods")
-                .description(chunk.join("\n"))
+                .description(format!(
+                    "-# {}:{}\n{}",
+                    info.server_ip,
+                    info.server_port,
+                    chunk.join("\n")
+                ))
                 .color(0xe67e22));
         }
     }
@@ -367,15 +407,26 @@ pub async fn view_mods(
         return Ok(());
     }
 
-    let reply = create_view_thread(ctx, interaction, "Mods View").await?;
-    base_paginator(ctx, reply, pages).await
+    let message = create_view_thread(ctx, interaction, "Mods View").await?;
+
+    let shard_ctx = ctx.serenity_context().clone();
+    let author_id = ctx.author().id;
+
+    tokio::spawn(async move {
+        if let Err(e) = base_paginator(shard_ctx, author_id, message, pages).await {
+            logger::error(format!("Paginator error: {:?}", e));
+        }
+    });
+
+    Ok(())
 }
 
 pub async fn view_sample(
     ctx: Context<'_>,
     interaction: &ComponentInteraction,
+    info: &ServerInfo,
     history: &ServerHistory,
-) -> Result<(), serenity::Error> {
+) -> Result<(), Error> {
     let mut pages = Vec::new();
     if let Some(sample) = &history.player_sample {
         let lines: Vec<String> = sample.iter()
@@ -385,7 +436,13 @@ pub async fn view_sample(
         for chunk in lines.chunks(15) {
             pages.push(create_base_embed(None)
                 .title("👥 Player Sample (Ping)")
-                .description(chunk.join("\n")));
+                .description(format!(
+                    "-# {}:{}\n{}",
+                    info.server_ip,
+                    info.server_port,
+                    chunk.join("\n")
+                ))
+            );
         }
     }
 
@@ -396,15 +453,26 @@ pub async fn view_sample(
         return Ok(());
     }
 
-    let reply = create_view_thread(ctx, interaction, "Player Sample View").await?;
-    base_paginator(ctx, reply, pages).await
+    let message = create_view_thread(ctx, interaction, "Player Sample View").await?;
+
+    let shard_ctx = ctx.serenity_context().clone();
+    let author_id = ctx.author().id;
+
+    tokio::spawn(async move {
+        if let Err(e) = base_paginator(shard_ctx, author_id, message, pages).await {
+            logger::error(format!("Paginator error: {:?}", e));
+        }
+    });
+
+    Ok(())
 }
 
 pub async fn view_players(
     ctx: Context<'_>,
     interaction: &ComponentInteraction,
+    info: &ServerInfo,
     history: &ServerHistory,
-) -> Result<(), serenity::Error> {
+) -> Result<(), Error> {
     let mut pages = Vec::new();
     if let Some(players) = &history.players {
         let lines: Vec<String> = players.iter()
@@ -414,7 +482,13 @@ pub async fn view_players(
         for chunk in lines.chunks(20) {
             pages.push(create_base_embed(None)
                 .title("👥 Online Players (Query)")
-                .description(chunk.join("\n")));
+                .description(format!(
+                    "-# {}:{}\n{}",
+                    info.server_ip,
+                    info.server_port,
+                    chunk.join("\n")
+                ))
+            );
         }
     }
 
@@ -425,6 +499,16 @@ pub async fn view_players(
         return Ok(());
     }
 
-    let reply = create_view_thread(ctx, interaction, "Player List View").await?;
-    base_paginator(ctx, reply, pages).await
+    let message = create_view_thread(ctx, interaction, "Player List View").await?;
+
+    let shard_ctx = ctx.serenity_context().clone();
+    let author_id = ctx.author().id;
+
+    tokio::spawn(async move {
+        if let Err(e) = base_paginator(shard_ctx, author_id, message, pages).await {
+            logger::error(format!("Paginator error: {:?}", e));
+        }
+    });
+
+    Ok(())
 }
