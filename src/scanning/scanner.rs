@@ -60,13 +60,7 @@ pub fn scan(targets: Vec<(Ipv4Addr, u16)>, config: ScanConfig) -> impl Stream<It
                         };
 
                         let join = if cfg.do_join {
-                            match execute_join_check(ip, port, cfg.join_timeout, "ServerRawler", ping_res.protocol_version.unwrap_or(767)).await {
-                                Ok(r) => Some(r),
-                                Err(e) => {
-                                    logger::error(format!("Failed to lookup join: {}", e)).send().await;
-                                    None
-                                }
-                            }
+                            execute_join_check(ip, port, cfg.join_timeout, "ServerRawler", ping_res.protocol_version.unwrap_or(767)).await.ok()
                         } else {
                             None
                         };
