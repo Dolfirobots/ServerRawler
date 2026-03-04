@@ -36,7 +36,7 @@ that tries to find as many servers as it can.
 - 📝 Supported protocols:
   - Minecraft **Ping** protocol
   - Minecraft **Query** protocol
-  - Minecraft **Join** protocol *(In development)*
+  - Minecraft **Join** protocol
 - 🔥 Easy to install and configure
 - 🖼️ Base64 to image converter
 - 📋 Fast IPv4 generator with CIDR feature
@@ -44,7 +44,6 @@ that tries to find as many servers as it can.
 - 🔥 Discord Bot
 
 ## ⏳ Planned
-- 📟 Minecraft **Join** protocol
 - 📃 Web API
 - 🌍 Geolocation
 - ➕ More features
