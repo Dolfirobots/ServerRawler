@@ -1,5 +1,5 @@
 use sqlx::{Postgres, Transaction};
-use crate::database::{parse_database_player, parse_database_server_history, parse_database_server_info, pool, PlayerHistory};
+use crate::database::{parse_database_player, pool, PlayerHistory};
 
 pub async fn insert_players(player_data: &Vec<PlayerHistory>, tx: &mut Transaction<'_, Postgres>) -> Result<(), sqlx::Error> {
     for history in player_data {
