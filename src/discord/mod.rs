@@ -148,6 +148,8 @@ pub async fn start_bot() {
                         .send()
                         .await;
 
+                    ctx.set_activity(Some(ActivityData::watching("players on servers")));
+
                     poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                     Ok(Data {})
                 })
