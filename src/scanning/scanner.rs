@@ -25,9 +25,9 @@ impl Default for ScanConfig {
             ping_timeout: Duration::from_secs(3),
             join_timeout: Duration::from_secs(3),
 
-            with_uuid: false,
-            do_query: false,
-            do_join: false,
+            with_uuid: true,
+            do_query: true,
+            do_join: true,
             max_tasks: 2000,
         }
     }
