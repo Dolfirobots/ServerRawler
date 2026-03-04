@@ -114,6 +114,33 @@ pub async fn get_server_by_address(ip: String, port: u16) -> Result<Option<(Serv
     }
 }
 
+pub async fn get_server_by_id(id: i32) -> Result<Option<(ServerInfo, ServerHistory)>, sqlx::Error> {
+    let pool = pool::get_pool();
+
+    let row = sqlx::query(
+        r#"
+        SELECT s.*, h.*
+        FROM servers s
+        LEFT JOIN server_history h ON s.server_id = h.server_id
+        WHERE s.server_id = $1
+        ORDER BY h.seen DESC
+        LIMIT 1
+        "#
+    )
+        .bind(id)
+        .fetch_optional(pool)
+        .await?;
+
+    if let Some(r) = row {
+        let server_info = parse_database_server_info(&r);
+        let server_history = parse_database_server_history(&r);
+
+        Ok(Some((server_info, server_history)))
+    } else {
+        Ok(None)
+    }
+}
+
 pub async fn search_servers(filters: SearchFilters, limit: i64) -> Result<Option<Vec<(ServerInfo, ServerHistory)>>, sqlx::Error> {
     let pool = pool::get_pool();
 
