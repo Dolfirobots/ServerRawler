@@ -165,15 +165,15 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
             .next()
             .await;
 
-        let mci = match collector {
+        let interaction = match collector {
             Some(i) => i,
             None => break,
         };
 
-        match mci.data.custom_id.as_str() {
+        match interaction.data.custom_id.as_str() {
             "reset" => {
                 filters = SearchFilters::default();
-                mci.create_response(
+                interaction.create_response(
                     &ctx.serenity_context().http, UpdateMessage(
                         CreateInteractionResponseMessage::new()
                             .embed(create_success_embed("Reset all filter rules!", Some(start_time)))
@@ -185,7 +185,7 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
                 continue;
             }
             "search" => {
-                mci.create_response(&ctx.serenity_context().http, UpdateMessage(
+                interaction.create_response(&ctx.serenity_context().http, UpdateMessage(
                     CreateInteractionResponseMessage::new()
                         .embed(create_loading_embed("searching..."))
                         .components(vec![])
@@ -194,7 +194,7 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
                 match search_servers(filters.clone(), 200).await {
                     // Found server
                     Ok(Some(servers)) => {
-                        mci.edit_response(
+                        interaction.edit_response(
                             &ctx.serenity_context().http,
                             EditInteractionResponse::new()
                                 .embed(create_success_embed(&format!("Found {} servers", servers.len()), Some(start_time)))
@@ -212,7 +212,7 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
                             )
                             .color(0xff0000);
 
-                        mci.edit_response(
+                        interaction.edit_response(
                             &ctx.serenity_context().http,
                             EditInteractionResponse::new()
                                 .embed(embed)
@@ -223,7 +223,7 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
                     },
                     // Database error
                     Err(err) => {
-                        mci.edit_response(
+                        interaction.edit_response(
                             &ctx.serenity_context().http,
                             EditInteractionResponse::new().embed(create_error_embed("Database error", Some(start_time)))
                         ).await?;
@@ -233,8 +233,8 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
                 return Ok(());
             }
             "server_filter" => {
-                if let ComponentInteractionDataKind::StringSelect { values } = &mci.data.kind {
-                    mci.create_response(&ctx.serenity_context().http, UpdateMessage(
+                if let ComponentInteractionDataKind::StringSelect { values } = &interaction.data.kind {
+                    interaction.create_response(&ctx.serenity_context().http, UpdateMessage(
                         CreateInteractionResponseMessage::new()
                             .embed(create_loading_embed("processing the input..."))
                             .components(vec![])
@@ -246,7 +246,7 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
                 }
             }
             _ => {
-                mci.defer(&ctx.serenity_context().http).await?;
+                interaction.defer(&ctx.serenity_context().http).await?;
             }
         }
     }
