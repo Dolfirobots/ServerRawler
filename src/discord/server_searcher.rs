@@ -27,8 +27,10 @@ pub async fn search_server(
 ) -> Result<(), Error> {
     let start_time = Utc::now();
 
-    let loading_embed = create_loading_embed("processing command");
-    let reply = ctx.send(CreateReply::default().embed(loading_embed)).await?;
+    let reply = ctx.send(
+        CreateReply::default()
+            .embed(create_loading_embed("processing command"))
+    ).await?;
 
     match ip {
         // IP was given
@@ -50,7 +52,7 @@ pub async fn search_server(
                 match server::get_server_by_address(resolved_ip.to_string(), port).await {
                     // Found in the database
                     Ok(Some((info, history))) => {
-                        actions::server::create_one_server_action(start_time, ctx, reply, info, history).await?;
+                        actions::server::create_one_server_action(start_time, ctx, &mut reply.into_message().await?, info, history).await?;
                     },
 
                     // Server not found
@@ -165,7 +167,7 @@ async fn server_not_found_action(
                             Ok(_) => {
                                 match server::get_server_by_address(resolved_ip.to_string(), port).await {
                                     Ok(Some((info, history))) => {
-                                        if let Err(e) = actions::server::create_one_server_action(start_time, ctx, reply.clone(), info, history).await {
+                                        if let Err(e) = actions::server::create_one_server_action(start_time, ctx, &mut reply.into_message().await?, info, history).await {
                                             logger::error(format!("Failed to create server action UI: {}", e)).send().await;
                                         }
                                         return Ok(());
