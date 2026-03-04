@@ -18,24 +18,25 @@ There are currently only some debug outputs.
 ## Usage
 
 ```bash
-./ServerRawler join <ADDRESS>
+./ServerRawler join <ADDRESS> <PROTOCOL VERSION>
 ```
 
 The `<ADDRESS>` should be in the format `<IP>[:PORT]`. If the port is unset, `25565` (the default Minecraft port) will be used.
+The `<PROTOCOL VERSION>` is the version on what the server is currently running. If you are unsure wich version is wich protocol, use [this](https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Protocol_version_numbers)
 
 ## Examples
 
-To perform a join check on a server at a specific IP address:
+To perform a join check on a server at a specific IP address with the protocol version from 1.21.11:
 
 ```bash
-./ServerRawler join 192.168.1.1
-```
-
-To perform a join check on a server at a specific IP address and port:
-
-```bash
-./ServerRawler join example.org:25565
+./ServerRawler join 192.168.1.1 774
 ```
 
 ### Example output:
-*No output due to development status*
+```bash
+[SUCCESS] [Join] Join-Check completed for 192.168.1.1:
+  • Auth-Type: Offline-Mode (Cracked)
+  • Whitelist: Enabled
+  • Kick-Reason:
+    │ "You are not whitelisted on this server!"
+```
