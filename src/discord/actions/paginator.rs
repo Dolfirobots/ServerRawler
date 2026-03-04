@@ -2,10 +2,11 @@ use std::net::Ipv4Addr;
 use std::str::FromStr;
 use std::time::Duration;
 use chrono::Utc;
-use serenity::all::{ButtonStyle, ComponentInteractionCollector, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, CreateInteractionResponse, CreateInteractionResponseMessage, EditAttachments, EditInteractionResponse, EditMessage, Message};
-use crate::database::{ServerHistory, ServerInfo};
+use serenity::all::{ButtonStyle, ComponentInteractionCollector, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, CreateInteractionResponse, CreateInteractionResponseMessage, EditAttachments, EditInteractionResponse, EditMessage, Message, UserId};
+use crate::database::{PlayerHistory, ServerHistory, ServerInfo};
+use crate::database::server::get_server_by_id;
 use crate::discord::actions::server::{build_manage_server_action_row, build_server_embed, convert_img_for_discord, view_mods, view_players, view_plugins, view_sample};
-use crate::discord::{create_error_embed, create_loading_embed, Context, Error};
+use crate::discord::{actions, create_base_embed, create_error_embed, create_loading_embed, Context, Error};
 use crate::minecraft::{join, ping, query};
 
 fn create_action_row(page: usize, total: usize, disabled: bool) -> Vec<CreateActionRow> {
@@ -31,7 +32,7 @@ fn create_action_row(page: usize, total: usize, disabled: bool) -> Vec<CreateAct
 
 pub async fn base_paginator(
     ctx: serenity::all::Context,
-    author_id: serenity::all::UserId,
+    author_id: UserId,
     mut message: Message,
     pages: Vec<CreateEmbed>,
 ) -> Result<(), Error> {
@@ -95,6 +96,136 @@ pub async fn base_paginator(
             .embed(final_embed)
             .components(create_action_row(current_page, total_pages, true))
     ).await?;
+
+    Ok(())
+}
+
+pub async fn player_paged_view(
+    ctx: Context<'_>,
+    author_id: UserId,
+    mut message: Message,
+    player_history: Vec<PlayerHistory>,
+) -> Result<(), Error> {
+    let total_pages = player_history.len();
+    if total_pages == 0 { return Ok(()); }
+
+    let embeds: Vec<CreateEmbed> = player_history.iter().map(|history| {
+        create_base_embed(None)
+            .title(format!("History Entry: {}", history.username))
+            .field("Server ID", format!("`{}`", history.server_id), true)
+            .field("Seen at", format!("<t:{}:F>", history.seen), true)
+            .thumbnail(format!("https://mc-heads.net/avatar/{}", history.uuid))
+    }).collect();
+
+    let make_components = |disabled: bool, current: usize, total: usize| {
+        let mut rows = vec![
+            CreateActionRow::Buttons(vec![
+                CreateButton::new("view_server")
+                    .label("View Server")
+                    .emoji('⏺')
+                    .style(ButtonStyle::Primary)
+                    .disabled(disabled)
+            ])
+        ];
+        rows.extend(create_action_row(current, total, disabled));
+        rows
+    };
+
+    let mut current_page = 0;
+
+    let get_page_embed = |idx: usize, base_embeds: &[CreateEmbed]| {
+        base_embeds[idx].clone().footer(CreateEmbedFooter::new(format!(
+            "ServerRawler {} • Page {}/{}",
+            crate::get_version_raw(),
+            idx + 1,
+            total_pages
+        )))
+    };
+
+    loop {
+        let current_embed = get_page_embed(current_page, &embeds);
+
+        message.edit(&ctx.http(), EditMessage::default()
+            .embed(current_embed)
+            .components(make_components(false, current_page, total_pages))
+        ).await?;
+
+        let interaction = ComponentInteractionCollector::new(ctx)
+            .author_id(author_id)
+            .message_id(message.id)
+            .timeout(Duration::from_secs(35))
+            .await;
+
+        let mci = match interaction {
+            Some(i) => i,
+            None => break,
+        };
+
+        match mci.data.custom_id.as_str() {
+            "first" => current_page = 0,
+            "prev" => if current_page > 0 { current_page -= 1 },
+            "next" => if current_page < total_pages - 1 { current_page += 1 },
+            "last" => current_page = total_pages - 1,
+            "view_server" => {
+                let start_time = Utc::now();
+                let server_id = player_history[current_page].server_id;
+
+                mci.create_response(&ctx.http(), CreateInteractionResponse::UpdateMessage(
+                    CreateInteractionResponseMessage::new().embed(create_loading_embed("fetching server from database"))
+                )).await?;
+
+
+                match get_server_by_id(server_id).await {
+                    Ok(Some((info, history))) => {
+                        actions::server::create_one_server_action(
+                            start_time,
+                            ctx,
+                            &mut message,
+                            info,
+                            history
+                        ).await?;
+                    },
+                    Ok(None) => {
+                        message.edit(&ctx.http(), EditMessage::default()
+                            .embed(create_error_embed("Server not found in database.", None))
+                            .components(vec![CreateActionRow::Buttons(vec![
+                                CreateButton::new("back_to_history").label("Back").style(ButtonStyle::Danger)
+                            ])])
+                        ).await?;
+
+                        tokio::time::sleep(Duration::from_secs(3)).await;
+                        continue;
+                    },
+                    Err(e) => {
+                        message.edit(&ctx.http(), EditMessage::default()
+                            .embed(create_error_embed("Database error", None))
+                        ).await?;
+
+                        tokio::time::sleep(Duration::from_secs(3)).await;
+                        continue;
+                    }
+                }
+            }
+            _ => continue,
+        }
+
+        mci.create_response(
+            &ctx.http(),
+            CreateInteractionResponse::UpdateMessage(
+                CreateInteractionResponseMessage::new()
+                    .embed(get_page_embed(current_page, &embeds))
+                    .components(make_components(false, current_page, total_pages))
+            )
+        ).await?;
+    }
+
+    let final_embed = get_page_embed(current_page, &embeds);
+    let _ = message.edit(
+        &ctx.http(),
+        EditMessage::default()
+            .embed(final_embed)
+            .components(make_components(true, current_page, total_pages))
+    ).await;
 
     Ok(())
 }
@@ -307,11 +438,11 @@ pub async fn create_paged_server_view(
     let mut components = build_manage_server_action_row(true, history);
     components.extend(create_action_row(current_page, total_pages, true));
 
-    message.edit(
+    let _ = message.edit(
         ctx, EditMessage::default()
             .embed(current_embed.clone())
             .components(components)
-    ).await?;
+    ).await;
 
     Ok(())
 }
