@@ -18,11 +18,6 @@
 
 ---
 
-> [!NOTE]
-> Languages:  
-> [**[🇩🇪] Deutsch**](./README_de.md)  
-> [**[🇬🇧] *English***](./README.md)
-
 > [!TIP]
 > Join my Discord, to easily use my Database
 
@@ -46,11 +41,11 @@ that tries to find as many servers as it can.
 - 🖼️ Base64 to image converter
 - 📋 Fast IPv4 generator with CIDR feature
 - 💾 PostgreSQL support
+- 🔥 Discord Bot
 
 ## ⏳ Planned
 - 📟 Minecraft **Join** protocol
 - 📃 Web API
-- 🔷 Control and monitoring via Discord bot
 - 🌍 Geolocation
 - ➕ More features
 
