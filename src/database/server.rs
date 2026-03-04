@@ -1,5 +1,6 @@
-use sqlx::{Postgres, Row, Transaction};
-use crate::database::{parse_database_server_history, parse_database_server_info, parse_players, pool, Player, PlayerHistory, ServerHistory, ServerInfo};
+use sqlx::Postgres;
+use crate::database::{parse_database_server_history, parse_database_server_info, parse_players, pool, ServerHistory, ServerInfo};
+use crate::database::player::insert_players;
 use crate::discord::actions::server_filter::{NumberFilter, SearchFilters, StringFilter};
 
 pub async fn insert_servers(results: &Vec<(ServerInfo, ServerHistory)>) -> Result<(), sqlx::Error> {
@@ -68,24 +69,6 @@ pub async fn insert_servers(results: &Vec<(ServerInfo, ServerHistory)>) -> Resul
             insert_players(&players, &mut tx).await?;
         }
         tx.commit().await?;
-    }
-    Ok(())
-}
-
-pub async fn insert_players(player_data: &Vec<(Player, PlayerHistory)>, tx: &mut Transaction<'_, Postgres>) -> Result<(), sqlx::Error> {
-    for (player, history) in player_data {
-        sqlx::query(
-            r#"
-            INSERT INTO player_history (uuid, username, server_id, seen)
-            VALUES ($1, $2, $3, $4)
-            "#
-        )
-            .bind(&history.uuid)
-            .bind(&history.username)
-            .bind(history.server_id)
-            .bind(history.seen)
-            .execute(&mut **tx)
-            .await?;
     }
     Ok(())
 }

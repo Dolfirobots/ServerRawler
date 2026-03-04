@@ -8,8 +8,7 @@ use crate::minecraft::{Join, LightPlayer, Mod, Ping, Plugin, Query, Software};
 
 pub mod pool;
 pub mod server;
-
-
+pub mod player;
 // Database Server
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -72,17 +71,8 @@ pub struct ServerHistory {
 // Database Player
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Player {
-    pub uuid: String, // Key
-    pub username: String,
-
-    pub discovered: i64,
-    pub last_seen: i64
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlayerHistory {
-    pub history_id: Option<i32>, // Key
+    pub history_id: Option<i64>, // Key
     pub uuid: String, // Key
     pub username: String,
 
@@ -155,7 +145,7 @@ pub fn parse_server(ip: Ipv4Addr, port: u16, ping: Ping, query: Option<Query>, j
     (info, history)
 }
 
-pub fn parse_players(server_id: i32, server_history: &ServerHistory) -> Vec<(Player, PlayerHistory)> {
+pub fn parse_players(server_id: i32, server_history: &ServerHistory) -> Vec<PlayerHistory> {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -184,22 +174,13 @@ pub fn parse_players(server_id: i32, server_history: &ServerHistory) -> Vec<(Pla
     found_players
         .into_iter()
         .map(|(uuid, username)| {
-            let player = Player {
-                uuid: uuid.clone(),
-                username: username.clone(),
-                discovered: now,
-                last_seen: now,
-            };
-
-            let history = PlayerHistory {
+            PlayerHistory {
                 history_id: None,
                 uuid,
                 username,
                 server_id,
                 seen: now,
-            };
-
-            (player, history)
+            }
         })
         .collect()
 }
@@ -243,5 +224,15 @@ pub fn parse_database_server_info(row: &PgRow) -> ServerInfo {
         discovered: row.get::<i64, _>("discovered"),
         bedrock: row.get::<bool, _>("bedrock"),
         country: row.get::<Option<String>, _>("country"),
+    }
+}
+
+pub fn parse_database_player(row: &PgRow) -> PlayerHistory {
+    PlayerHistory {
+        history_id: Some(row.get::<i64, _>("history_id")),
+        uuid: row.get::<String, _>("uuid"),
+        username: row.get::<String, _>("username"),
+        server_id: row.get::<i32, _>("server_id"),
+        seen: row.get::<i64, _>("seen"),
     }
 }
