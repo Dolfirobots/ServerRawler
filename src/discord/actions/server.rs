@@ -160,7 +160,7 @@ pub fn build_server_embed(start_time: DateTime<Utc>, info: &ServerInfo, history:
 pub async fn create_one_server_action(
     start_time: DateTime<Utc>,
     ctx: Context<'_>,
-    reply: ReplyHandle<'_>,
+    message: &mut Message,
     server_info: ServerInfo,
     server_history: ServerHistory
 ) -> Result<(), Error> {
@@ -169,9 +169,6 @@ pub async fn create_one_server_action(
     if let Some(attachment) = convert_img_for_discord(&server_history) {
         response = response.attachments(EditAttachments::new().add(attachment));
     }
-
-    // Using the message.edit() because reply.edit() doesn't works correctly with attachments
-    let mut message = reply.message().await?.into_owned();
 
     message.edit(
         &ctx.serenity_context().http,
