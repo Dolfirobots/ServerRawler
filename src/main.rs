@@ -105,8 +105,8 @@ async fn main() -> Result<()> {
             tasks::run_query(address).await;
         }
 
-        cli::Commands::Join { address } => {
-            tasks::run_join(address).await;
+        cli::Commands::Join { address, protocol } => {
+            tasks::run_join(address, protocol).await;
         }
 
         cli::Commands::Crawl { cidr } => {

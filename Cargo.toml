@@ -26,3 +26,4 @@ toml = "1.0.3+spec-1.1.0"
 url = "2.5.8"
 poise = "0.6.1"
 serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model"] }
+flate2 = "1.1.9"

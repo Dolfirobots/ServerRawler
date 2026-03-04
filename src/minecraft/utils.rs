@@ -1,7 +1,6 @@
 use std::net::Ipv4Addr;
 use serde_json::Value;
-use tokio::io::AsyncReadExt;
-use tokio::net::TcpStream;
+use tokio::io::{AsyncRead, AsyncReadExt};
 use uuid::Uuid;
 
 // Minecraft packet decoder/encoder
@@ -14,7 +13,7 @@ pub fn write_varint(val: i32, buf: &mut Vec<u8>) {
     buf.push(v as u8);
 }
 
-pub async fn read_varint(stream: &mut TcpStream) -> Result<i32, String> {
+pub async fn read_varint<R: AsyncRead + Unpin>(stream: &mut R) -> Result<i32, String> {
     let mut res = 0;
     for i in 0..5 {
         let b = stream.read_u8().await.map_err(|e| e.to_string())?;

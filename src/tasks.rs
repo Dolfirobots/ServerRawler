@@ -83,11 +83,9 @@ pub async fn run_query(target: String) {
     }).await;
 }
 
-pub async fn run_join(target: String) {
+pub async fn run_join(target: String, protocol: i32) {
     TaskManager::spawn("Join", move |_cancel_token| async move {
         logger::info(format!("Starting Join-Check for {}", target.clone().hex(DefaultColor::Highlight.hex())))
-            .prefix("Join").send().await;
-        logger::warning("Please note this feature is in development".on_yellow())
             .prefix("Join").send().await;
 
         let parts = target.split(':').collect::<Vec<&str>>();
@@ -96,7 +94,7 @@ pub async fn run_join(target: String) {
 
         let username = "ServerRawler";
 
-        match execute_join_check(ip, port, Duration::from_secs(7), username, 770).await {
+        match execute_join_check(ip, port, Duration::from_secs(7), username, protocol).await {
             Ok(result) => {
                 logger::success(format!("Join-Check completed for {}:", target.hex(DefaultColor::Highlight.hex())))
                     .prefix("Join").send().await;

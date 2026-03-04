@@ -68,6 +68,9 @@ pub enum Commands {
     Join {
         #[arg(value_name = "<IP>[:PORT]")]
         address: String,
+
+        #[arg(value_name = "Protocol version")]
+        protocol: i32,
     },
 
     #[command(
