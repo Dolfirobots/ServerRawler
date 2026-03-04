@@ -2,7 +2,7 @@ use std::net::Ipv4Addr;
 use std::sync::Arc;
 use futures::{stream, Stream, StreamExt};
 use std::time::Duration;
-use crate::minecraft;
+use crate::{logger, minecraft};
 use crate::minecraft::join::execute_join_check;
 use crate::minecraft::ping::execute_ping;
 use crate::minecraft::query::execute_query;
@@ -60,7 +60,13 @@ pub fn scan(targets: Vec<(Ipv4Addr, u16)>, config: ScanConfig) -> impl Stream<It
                         };
 
                         let join = if cfg.do_join {
-                            execute_join_check(ip, port, cfg.join_timeout, "ServerRawler", ping_res.protocol_version.unwrap_or(767)).await.ok()
+                            match execute_join_check(ip, port, cfg.join_timeout, "ServerRawler", ping_res.protocol_version.unwrap_or(767)).await {
+                                Ok(r) => Some(r),
+                                Err(e) => {
+                                    logger::error(format!("Failed to lookup join: {}", e)).send().await;
+                                    None
+                                }
+                            }
                         } else {
                             None
                         };
