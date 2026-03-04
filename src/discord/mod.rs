@@ -13,6 +13,7 @@ use colored_text::Colorize;
 use serenity::all::{ActionRowComponent, ComponentInteraction, CreateActionRow, CreateEmbed, CreateEmbedFooter, CreateInputText, CreateInteractionResponse, CreateModal, InputTextStyle, ModalInteraction, ModalInteractionData};
 use serenity::client::ClientBuilder;
 use serenity::collector::ModalInteractionCollector;
+use serenity::gateway::ActivityData;
 use crate::{logger, manager};
 use crate::config::MainConfig;
 use crate::logger::DefaultColor;
@@ -148,6 +149,8 @@ pub async fn start_bot() {
                         .send()
                         .await;
 
+                    ctx.set_activity(Some(ActivityData::watching("players on servers")));
+
                     poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                     Ok(Data {})
                 })
@@ -181,7 +184,7 @@ pub async fn start_bot() {
                 .prefix("Discord").send().await;
         }
 
-        logger::success("Bot has been shut down gracefully.".into())
+        logger::success("Bot has been shut down.".into())
             .prefix("Discord").send().await;
     }).await;
 }
