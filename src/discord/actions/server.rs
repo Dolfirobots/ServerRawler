@@ -1,4 +1,3 @@
-use std::fmt::format;
 use std::net::Ipv4Addr;
 use std::str::FromStr;
 use std::time::Duration;
@@ -6,12 +5,11 @@ use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use chrono::{DateTime, Utc};
 use futures::StreamExt;
-use poise::ReplyHandle;
-use serenity::all::{AutoArchiveDuration, ButtonStyle, ChannelType, ComponentInteraction, ComponentInteractionCollector, CreateActionRow, CreateAttachment, CreateButton, CreateEmbed, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, CreateThread, EditAttachments, EditInteractionResponse, EditMessage, Message};
+use serenity::all::{AutoArchiveDuration, ButtonStyle, ChannelType, ComponentInteraction, ComponentInteractionCollector, CreateActionRow, CreateAttachment, CreateButton, CreateEmbed, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, CreateThread, EditAttachments, EditInteractionResponse, EditMessage, Message, RoleId};
 use crate::database::{ServerHistory, ServerInfo};
 use crate::discord::{create_base_embed, create_error_embed, create_loading_embed, Context, Error};
 use crate::discord::actions::paginator::base_paginator;
-use crate::logger;
+use crate::{config, logger};
 use crate::minecraft::{join, ping, query};
 
 // TODO: Add error msgs
@@ -71,6 +69,10 @@ pub fn build_manage_server_action_row(disabled: bool, history: &ServerHistory) -
                     .label("History")
                     .style(ButtonStyle::Primary)
                     .emoji('📖')
+                    .disabled(disabled),
+                CreateButton::new("view_join")
+                    .label("Join Details")
+                    .style(ButtonStyle::Secondary)
                     .disabled(disabled)
             ]
         )
@@ -171,7 +173,7 @@ pub async fn create_one_server_action(
     }
 
     message.edit(
-        &ctx.serenity_context().http,
+        &ctx.http(),
         response.clone().components(build_manage_server_action_row(false, &server_history))
     ).await?;
 
@@ -254,6 +256,60 @@ pub async fn handle_server_actions(
             )).await?;
             // TODO: Give user the complete history of the server
             //  with paginator
+        }
+
+        "view_join" => {
+            let start_time = Utc::now();
+            let cfg = config::MainConfig::get().ok();
+            let required_role_id = cfg.and_then(|c| c.discord.join_verify_role).map(RoleId::new);
+
+            let has_permission = if let Some(role_id) = required_role_id {
+                interaction.member.as_ref().map_or(false, |member| {
+                    member.roles.contains(&role_id)
+                })
+            } else {
+                false
+            };
+
+            if !has_permission {
+                interaction.create_response(
+                    &ctx.http(),
+                    CreateInteractionResponse::Message(
+                        CreateInteractionResponseMessage::new()
+                            .embed(
+                                create_error_embed("", Some(start_time))
+                                    .description("**No Permission:** You need to be verified to see the join information's")
+                            )
+                            .ephemeral(true)
+                    )
+                ).await?;
+                return Ok(());
+            }
+
+            let mut response = create_base_embed(Some(start_time))
+                .title("Join Information's")
+                .description(
+                    format!(
+                        "-# {}:{}\n- **Cracked:** {}\n- **Whitelist:** {}",
+                        server_info.server_ip,
+                        server_info.server_port,
+                        server_history.cracked.map(|b| if b { "Yes" } else { "No" }).unwrap_or("Unknown"),
+                        server_history.whitelist.map(|b| if b { "Enabled" } else { "Disabled" }).unwrap_or("Unknown")
+                    )
+                );
+
+            if let Some(kick_msg) = &server_history.kick_message {
+                response = response.field("Kick Message", format!("```{}```", kick_msg), true);
+            }
+
+            interaction.create_response(
+                &ctx.http(),
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .embed(response)
+                        .ephemeral(true)
+                )
+            ).await?;
         }
 
         "view_plugins" => {

@@ -119,7 +119,8 @@ pub struct GeneralConfig {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct DiscordConfig {
     pub token: Option<String>,
-    pub admin_roles: Option<Vec<u64>>
+    pub admin_roles: Option<Vec<u64>>,
+    pub join_verify_role: Option<u64>
 }
 
 // Process code
@@ -305,7 +306,8 @@ impl Default for MainConfig {
             },
             discord: DiscordConfig {
                 token: None,
-                admin_roles: None
+                admin_roles: None,
+                join_verify_role: None
             }
         }
     }

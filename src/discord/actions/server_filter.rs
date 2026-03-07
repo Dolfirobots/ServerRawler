@@ -2,8 +2,9 @@ use std::time::Duration;
 use chrono::{DateTime, Utc};
 use futures::StreamExt;
 use poise::{CreateReply, ReplyHandle};
-use serenity::all::{ButtonStyle, ComponentInteractionCollector, ComponentInteractionDataKind, CreateActionRow, CreateButton, CreateEmbed, CreateInteractionResponse, CreateInteractionResponseMessage, CreateSelectMenu, CreateSelectMenuKind, CreateSelectMenuOption, EditInteractionResponse, EditMessage, Message};
+use serenity::all::{ButtonStyle, ComponentInteractionCollector, ComponentInteractionDataKind, CreateActionRow, CreateButton, CreateEmbed, CreateInteractionResponse, CreateInteractionResponseMessage, CreateSelectMenu, CreateSelectMenuKind, CreateSelectMenuOption, EditInteractionResponse, EditMessage, Message, RoleId};
 use serenity::all::CreateInteractionResponse::UpdateMessage;
+use crate::config;
 use crate::database::server::search_servers;
 use crate::discord::{create_base_embed, create_error_embed, create_loading_embed, create_success_embed, open_string_input_modal, Context, Error};
 use crate::discord::actions::paginator::create_paged_server_view;
@@ -113,29 +114,32 @@ impl SearchFilters {
 pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<(), Error> {
     let mut filters = SearchFilters::default();
 
-    let make_home_action_row = |disabled, filter_is_none|
+    let make_home_action_row = |disabled, filter_is_none, has_perm| {
+        let mut options = vec![
+            CreateSelectMenuOption::new("Description", "edit_description").emoji('📝'),
+            CreateSelectMenuOption::new("Max Players", "edit_max_players").emoji('👥'),
+            CreateSelectMenuOption::new("Online Players", "edit_online_players").emoji('👥'),
+            //CreateSelectMenuOption::new("Player Sample", "edit_player_sample").emoji('👥'),
+            CreateSelectMenuOption::new("Version", "edit_version").emoji('📶'),
+            CreateSelectMenuOption::new("Enforce Secure Chat", "edit_enforce_secure_chat").emoji('💬'),
+            CreateSelectMenuOption::new("Modded Server", "edit_modding").emoji('🧩'),
+            CreateSelectMenuOption::new("Plugins", "edit_plugins").emoji('🧩'),
+            CreateSelectMenuOption::new("Software", "edit_software").emoji('📖'),
+        ];
+
+        if has_perm {
+            options.extend([
+                CreateSelectMenuOption::new("Kick Message", "edit_kick_message").emoji('📝'),
+                CreateSelectMenuOption::new("Cracked", "edit_cracked").emoji('🔓'),
+                CreateSelectMenuOption::new("Whitelist", "edit_whitelist").emoji('🔓')
+            ]);
+        }
+
+        let select_menu = CreateSelectMenu::new("server_filter", CreateSelectMenuKind::String { options })
+            .disabled(disabled);
+
         vec![
-            CreateActionRow::SelectMenu(CreateSelectMenu::new("server_filter", CreateSelectMenuKind::String {
-                options: vec![
-                    CreateSelectMenuOption::new("Description", "edit_description").emoji('📝'),
-
-                    CreateSelectMenuOption::new("Max Players", "edit_max_players").emoji('👥'),
-                    CreateSelectMenuOption::new("Online Players", "edit_online_players").emoji('👥'),
-                    //CreateSelectMenuOption::new("Player Sample", "edit_player_sample").emoji('👥'),
-
-                    CreateSelectMenuOption::new("Version", "edit_version").emoji('📶'),
-                    CreateSelectMenuOption::new("Enforce Secure Chat", "edit_enforce_secure_chat").emoji('💬'),
-
-                    CreateSelectMenuOption::new("Modded Server", "edit_modding").emoji('🧩'),
-
-                    CreateSelectMenuOption::new("Plugins", "edit_plugins").emoji('🧩'),
-                    CreateSelectMenuOption::new("Software", "edit_software").emoji('📖'),
-
-                    CreateSelectMenuOption::new("Kick Message", "edit_kick_message").emoji('📝'),
-                    CreateSelectMenuOption::new("Cracked", "edit_cracked").emoji('🔓'),
-                    CreateSelectMenuOption::new("Whitelist", "edit_whitelist").emoji('🔓')
-                ]
-            }).disabled(disabled)),
+            CreateActionRow::SelectMenu(select_menu),
             CreateActionRow::Buttons(vec![
                 CreateButton::new("search")
                     .label("Search")
@@ -148,14 +152,28 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
                     .emoji('🗑')
                     .disabled(disabled || filter_is_none)
             ])
-        ];
+        ]
+    };
 
     loop {
         let start_time = Utc::now();
 
+        let cfg = config::MainConfig::get().ok();
+        let required_role_id = cfg.and_then(|c| c.discord.join_verify_role).map(RoleId::new);
+
+        let has_permission = if let Some(role_id) = required_role_id {
+            if let Some(guild_id) = ctx.guild_id() {
+                ctx.author().has_role(ctx.serenity_context(), guild_id, role_id).await.unwrap_or(false)
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+
         reply.edit(ctx, CreateReply::default()
             .embed(filters.build_homepage(start_time))
-            .components(make_home_action_row(false, filters.is_empty()))
+            .components(make_home_action_row(false, filters.is_empty(), has_permission))
         ).await?;
 
         let collector = ComponentInteractionCollector::new(ctx.serenity_context())
@@ -253,7 +271,7 @@ pub async fn open_filter_ui(ctx: Context<'_>, reply: ReplyHandle<'_>) -> Result<
 
     reply.edit(ctx, CreateReply::default()
         .embed(filters.build_homepage(Utc::now()))
-        .components(make_home_action_row(true, true))
+        .components(make_home_action_row(true, true, false))
     ).await?;
     Ok(())
 }

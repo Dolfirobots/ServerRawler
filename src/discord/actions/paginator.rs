@@ -56,30 +56,30 @@ pub async fn base_paginator(
             .components(create_action_row(current_page, total_pages, false))
         ).await?;
 
-        let interaction = ComponentInteractionCollector::new(&ctx)
+        let collector = ComponentInteractionCollector::new(&ctx)
             .author_id(author_id)
             .message_id(message.id)
             .timeout(Duration::from_secs(35))
             .next()
             .await;
 
-        let mci = match interaction {
+        let interaction = match collector {
             Some(i) => i,
             None => break,
         };
 
-        match mci.data.custom_id.as_str() {
+        match interaction.data.custom_id.as_str() {
             "first" => current_page = 0,
             "prev" => if current_page > 0 { current_page -= 1 },
             "next" => if current_page < total_pages - 1 { current_page += 1 },
             "last" => current_page = total_pages - 1,
             _ => {
-                mci.defer(&ctx).await?;
+                interaction.defer(&ctx).await?;
                 continue;
             }
         }
 
-        mci.create_response(
+        interaction.create_response(
             &ctx,
             CreateInteractionResponse::UpdateMessage(
                 CreateInteractionResponseMessage::new()
@@ -150,18 +150,18 @@ pub async fn player_paged_view(
             .components(make_components(false, current_page, total_pages))
         ).await?;
 
-        let interaction = ComponentInteractionCollector::new(ctx)
+        let collector = ComponentInteractionCollector::new(ctx)
             .author_id(author_id)
             .message_id(message.id)
             .timeout(Duration::from_secs(35))
             .await;
 
-        let mci = match interaction {
+        let interaction = match collector {
             Some(i) => i,
             None => break,
         };
 
-        match mci.data.custom_id.as_str() {
+        match interaction.data.custom_id.as_str() {
             "first" => current_page = 0,
             "prev" => if current_page > 0 { current_page -= 1 },
             "next" => if current_page < total_pages - 1 { current_page += 1 },
@@ -170,7 +170,7 @@ pub async fn player_paged_view(
                 let start_time = Utc::now();
                 let server_id = player_history[current_page].server_id;
 
-                mci.create_response(&ctx.http(), CreateInteractionResponse::UpdateMessage(
+                interaction.create_response(&ctx.http(), CreateInteractionResponse::UpdateMessage(
                     CreateInteractionResponseMessage::new().embed(create_loading_embed("fetching server from database"))
                 )).await?;
 
@@ -209,7 +209,7 @@ pub async fn player_paged_view(
             _ => continue,
         }
 
-        mci.create_response(
+        interaction.create_response(
             &ctx.http(),
             CreateInteractionResponse::UpdateMessage(
                 CreateInteractionResponseMessage::new()
