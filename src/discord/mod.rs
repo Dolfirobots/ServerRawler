@@ -54,7 +54,8 @@ pub async fn start_bot() {
                 commands: vec![
                     server_searcher::search_server(),
                     player_searcher::search_player(),
-                    cleanup_command::cleanup()
+                    cleanup_command::cleanup(),
+                    stats_command::stats()
                 ],
                 prefix_options: PrefixFrameworkOptions {
                     prefix: Some("!".into()),

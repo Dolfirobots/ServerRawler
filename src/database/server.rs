@@ -256,3 +256,20 @@ pub async fn search_servers(filters: SearchFilters, limit: i64) -> Result<Option
 
     Ok(Some(results))
 }
+
+pub async fn get_database_counts() -> Result<(i64, i64, i64), sqlx::Error> {
+    let pool = pool::get_pool();
+
+    let counts: (i64, i64, i64) = sqlx::query_as(
+        r#"
+        SELECT
+            (SELECT COUNT(*) FROM servers) as server_count,
+            (SELECT COUNT(*) FROM server_history) as history_count,
+            (SELECT COUNT(*) FROM player_history) as player_count
+        "#
+    )
+        .fetch_one(pool)
+        .await?;
+
+    Ok(counts)
+}
