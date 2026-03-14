@@ -2,7 +2,8 @@ use std::net::Ipv4Addr;
 use std::str::FromStr;
 use std::time::Duration;
 use chrono::Utc;
-use serenity::all::{ButtonStyle, ComponentInteractionCollector, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, CreateInteractionResponse, CreateInteractionResponseMessage, EditAttachments, EditInteractionResponse, EditMessage, Message, UserId};
+use serenity::all::{ButtonStyle, ComponentInteractionCollector, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, CreateInteractionResponse, CreateInteractionResponseMessage, EditAttachments, EditInteractionResponse, EditMessage, Message, RoleId, UserId};
+use crate::config;
 use crate::database::{PlayerHistory, ServerHistory, ServerInfo};
 use crate::database::server::get_server_by_id;
 use crate::discord::actions::server::{build_manage_server_action_row, build_server_embed, convert_img_for_discord, view_mods, view_players, view_plugins, view_sample};
@@ -403,6 +404,60 @@ pub async fn create_paged_server_view(
                 )).await?;
                 // TODO: Give user the complete history of the server
                 //  with paginator
+            }
+
+            "view_join" => {
+                let start_time = Utc::now();
+                let cfg = config::MainConfig::get().ok();
+                let required_role_id = cfg.and_then(|c| c.discord.join_verify_role).map(RoleId::new);
+
+                let has_permission = if let Some(role_id) = required_role_id {
+                    interaction.member.as_ref().map_or(false, |member| {
+                        member.roles.contains(&role_id)
+                    })
+                } else {
+                    false
+                };
+
+                if !has_permission {
+                    interaction.create_response(
+                        &ctx.http(),
+                        CreateInteractionResponse::Message(
+                            CreateInteractionResponseMessage::new()
+                                .embed(
+                                    create_error_embed("", Some(start_time))
+                                        .description("**No Permission:** You need to be verified to see the join information's")
+                                )
+                                .ephemeral(true)
+                        )
+                    ).await?;
+                    return Ok(());
+                }
+
+                let mut response = create_base_embed(Some(start_time))
+                    .title("Join Information's")
+                    .description(
+                        format!(
+                            "-# {}:{}\n- **Cracked:** {}\n- **Whitelist:** {}",
+                            info.server_ip,
+                            info.server_port,
+                            history.cracked.map(|b| if b { "Yes" } else { "No" }).unwrap_or("Unknown"),
+                            history.whitelist.map(|b| if b { "Enabled" } else { "Disabled" }).unwrap_or("Unknown")
+                        )
+                    );
+
+                if let Some(kick_msg) = &history.kick_message {
+                    response = response.field("Kick Message", format!("```{}```", kick_msg), true);
+                }
+
+                interaction.create_response(
+                    &ctx.http(),
+                    CreateInteractionResponse::Message(
+                        CreateInteractionResponseMessage::new()
+                            .embed(response)
+                            .ephemeral(true)
+                    )
+                ).await?;
             }
 
             _ => continue
