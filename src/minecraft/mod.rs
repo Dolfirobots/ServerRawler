@@ -43,6 +43,7 @@ pub struct Query {
 pub struct Join {
     pub cracked: bool,
     pub whitelist: bool,
+    pub modded: bool,
     pub kick_message: Option<String>,
 }
 

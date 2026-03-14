@@ -127,7 +127,7 @@ pub fn parse_server(ip: Ipv4Addr, port: u16, ping: Ping, query: Option<Query>, j
 
         enforces_secure_chat: ping.enforces_secure_chat,
 
-        is_modded_server: Some(ping.is_modded),
+        is_modded_server: Some(ping.is_modded || join.as_ref().map(|j| j.modded).unwrap_or(false)),
         mods: ping.mods,
         mod_loader: ping.mod_loader,
 

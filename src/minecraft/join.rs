@@ -91,20 +91,26 @@ async fn handle_packet_stream(packet_id: i32, stream: &mut TcpStream) -> Result<
             ];
 
             let whitelist_keywords = [
-                "whitelist", "whitelisted", "not allowed"
+                "whitelist", "whitelisted", "not allowed", "banned"
+            ];
+
+            let modding_keywords = [
+                "modding", "require mods", "require Forge", "This server has mods"
             ];
 
             let is_cracked = !online_mode_keywords.iter().any(|&k| lower_reason.contains(k));
             let is_whitelist = whitelist_keywords.iter().any(|&k| lower_reason.contains(k));
+            let is_modded = modding_keywords.iter().any(|&k| lower_reason.contains(k));
 
             Ok(Join {
                 cracked: is_cracked,
                 whitelist: is_whitelist,
+                modded: is_modded,
                 kick_message: Some(plain_reason)
             })
         }
-        0x01 => Ok(Join { cracked: false, whitelist: false, kick_message: None }),
-        0x02 => Ok(Join { cracked: true, whitelist: false, kick_message: None }),
+        0x01 => Ok(Join { cracked: false, whitelist: false, modded: false, kick_message: None }),
+        0x02 => Ok(Join { cracked: true, whitelist: false, modded: false, kick_message: None }),
         _ => Err(format!("Unknown packet: 0x{:02X}", packet_id)),
     }
 }
@@ -128,20 +134,26 @@ async fn handle_packet(packet_id: i32, mut cursor: Cursor<Vec<u8>>) -> Result<Jo
             ];
 
             let whitelist_keywords = [
-                "whitelist", "whitelisted", "not allowed"
+                "whitelist", "whitelisted", "not allowed", "banned"
+            ];
+
+            let modding_keywords = [
+                "modding", "require mods", "require Forge", "This server has mods"
             ];
 
             let is_cracked = !online_mode_keywords.iter().any(|&k| lower_reason.contains(k));
             let is_whitelist = whitelist_keywords.iter().any(|&k| lower_reason.contains(k));
+            let is_modded = modding_keywords.iter().any(|&k| lower_reason.contains(k));
 
             Ok(Join {
                 cracked: is_cracked,
                 whitelist: is_whitelist,
+                modded: is_modded,
                 kick_message: Some(plain_reason)
             })
         }
-        0x01 => Ok(Join { cracked: false, whitelist: false, kick_message: None }),
-        0x02 => Ok(Join { cracked: true, whitelist: false, kick_message: None }),
+        0x01 => Ok(Join { cracked: false, whitelist: false, modded: false, kick_message: None }),
+        0x02 => Ok(Join { cracked: true, whitelist: false, modded: false, kick_message: None }),
         _ => Err(format!("Unknown packet after decompression: 0x{:02X}", packet_id)),
     }
 }
