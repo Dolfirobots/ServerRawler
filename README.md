@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Cyberdolfi/ServerRawler/refs/heads/main/docs/static/img/logo.png" width="200" alt="Logo">
+  <img src="https://raw.githubusercontent.com/Dolfirobots/ServerRawler/refs/heads/main/docs/static/img/logo.png" width="200" alt="Logo">
   <h1>ServerRawler</h1>
   <p>A high-performance Minecraft server scanner written in Rust</p>
 </div>
@@ -11,9 +11,9 @@
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/postgresql-gray?style=for-the-badge&logo=postgresql&logoColor=orange" alt="MySQL"/></a>
   <a href="https://www.jetbrains.com/"><img src="https://img.shields.io/badge/jetbrains-gray?style=for-the-badge&logo=jetbrains&logoColor=orange" alt="JetBrains"/></a>
   <br>
-  <a href="https://cyberdolfi.github.io/ServerRawler/"><img src="https://shields.io/badge/wiki-gray?style=for-the-badge&logo=readthedocs&logoColor=orange" alt="Wiki page"/></a>
+  <a href="https://dolfirobots.github.io/ServerRawler/"><img src="https://shields.io/badge/wiki-gray?style=for-the-badge&logo=readthedocs&logoColor=orange" alt="Wiki page"/></a>
   <a href="https://discord.gg/FcWaApSbep"><img src="https://img.shields.io/discord/1421594734442319996.svg?style=for-the-badge&logo=discord&logoColor=orange&label=discord&color=orange" alt="Discord"/></a>
-  <a href="https://github.com/Cyberdolfi/ServerRawler/releases/"><img src="https://shields.io/github/downloads/cyberdolfi/serverrawler/total?style=for-the-badge&label=downloads&color=orange&logo=github&logoColor=orange" alt="GitHub Downloads"/></a>
+  <a href="https://github.com/Dolfirobots/ServerRawler/releases/"><img src="https://shields.io/github/downloads/dolfirobots/serverrawler/total?style=for-the-badge&label=downloads&color=orange&logo=github&logoColor=orange" alt="GitHub Downloads"/></a>
 </div>
 
 ---
@@ -22,7 +22,7 @@
 > Join my Discord, to easily use my Database
 
 > [!IMPORTANT]
-> This project is currently in early alpha!
+> This project is currently in paused, due some time stress!
 
 ---
 
@@ -68,7 +68,7 @@ See more at the [project](https://github.com/users/Cyberdolfi/projects/2)
 ---
 
 ## 📥 Installation
-Installation instructions are in the [**Documentation**](https://cyberdolfi.github.io/ServerRawler/).
+Installation instructions are in the [**Documentation**](https://dolfirobots.github.io/ServerRawler/).
 
 ---
 
@@ -80,11 +80,11 @@ This project is licensed under the [GPL-3.0 License](./LICENSE).
 
 ## 🤝 Contributing
 
-- Found a bug? [Create an issue](https://github.com/Cyberdolfi/ServerRawler/issues)
+- Found a bug? [Create an issue](https://github.com/Dolfirobots/ServerRawler/issues)
 - Have ideas or suggestions? Join my [Discord](https://discord.gg/4wHFzBjDTY "Discord")
-- Want to contribute code? [Fork the repository](https://github.com/Cyberdolfi/ServerRawler/fork)
+- Want to contribute code? [Fork the repository](https://github.com/Dolfirobots/ServerRawler/fork)
 
 ---
 
 > [!WARNING]
-> The authors are not responsible for any misuse of this tool or code.
+> The authors are not responsible for any misuse of this tool, code or Discord bot.

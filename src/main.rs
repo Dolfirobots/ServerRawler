@@ -278,7 +278,7 @@ async fn parse_user_cidr(cidr_str: Option<String>) -> Option<(Ipv4Addr, u8)> {
 
 async fn print_version() {
     let current_raw = get_version_raw();
-    let github = GithubAPI::new("Cyberdolfi", "ServerRawler").set_agent("ServerRawler");
+    let github = GithubAPI::new("Dolfirobots", "ServerRawler").set_agent("ServerRawler");
 
     let prefix = match current_raw.to_lowercase() {
         v if v.contains("dev") => "[DEV]".hex("#bf3eff"),

@@ -19,11 +19,11 @@ const config = {
     v4: true, // Improve compatibility with the upcoming Docusaurus v4
   },
 
-  url: 'https://cyberdolfi.github.io',
+  url: 'https://dolfirobots.github.io',
   baseUrl: '/ServerRawler/',
 
   // GitHub pages deployment config.
-  organizationName: 'Cyberdolfi',
+  organizationName: 'Dolfirobots',
   projectName: 'ServerRawler',
 
   onBrokenLinks: 'throw',
@@ -44,7 +44,7 @@ const config = {
         docs: {
           sidebarPath: './sidebars.js',
           editUrl:
-            'https://github.com/Cyberdolfi/ServerRawler/tree/main/docs/',
+            'https://github.com/Dolfirobots/ServerRawler/tree/main/docs/',
         },
         theme: {
           customCss: './src/css/custom.css',
@@ -76,7 +76,7 @@ const config = {
             label: 'Docs',
           },
           {
-            href: 'https://github.com/Cyberdolfi/ServerRawler',
+            href: 'https://github.com/Dolfirobots/ServerRawler',
             label: 'GitHub',
             position: 'right',
           },
@@ -99,7 +99,7 @@ const config = {
           {
             title: 'Community & Social',
             items: [
-              { label: 'GitHub', href: 'https://github.com/Cyberdolfi/ServerRawler' },
+              { label: 'GitHub', href: 'https://github.com/Dolfirobots/ServerRawler' },
               { label: 'Discord', href: 'https://discord.gg/4wHFzBjDTY' },
             ],
           },
@@ -107,11 +107,11 @@ const config = {
             title: 'Project',
             items: [
               { label: 'Contributing', to: '/docs/contributing' },
-              { label: 'License', href: 'https://github.com/Cyberdolfi/ServerRawler/blob/main/LICENSE' },
+              { label: 'License', href: 'https://github.com/Dolfirobots/ServerRawler/blob/main/LICENSE' },
             ],
           },
         ],
-        copyright: `Crafted by Cyberdolfi. Built with Docusaurus. Copyright © ${new Date().getFullYear()} ServerRawler.`,
+        copyright: `Crafted by Cyberdolfi and Dolfirobots. Built with Docusaurus. Copyright © ${new Date().getFullYear()} ServerRawler.`,
       },
 
       prism: {

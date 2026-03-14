@@ -152,7 +152,7 @@ pub async fn print_banner() {
         " ███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║    ██║  ██║██║  ██║╚███╔███╔╝███████╗███████╗██║  ██║ ",
         " ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚══════╝╚══════╝╚═╝  ╚═╝ "
     ];
-    let border_bottom = "╰────────────────────────────── https://github.com/Cyberdolfi/ServerRawler ───────────────────────────────╯";
+    let border_bottom = "╰────────────────────────────── https://github.com/Dolfirobots/ServerRawler ──────────────────────────────╯";
 
     info(format!("{}", border_top.hex(DefaultColor::Gray.hex()))).send().await;
 
