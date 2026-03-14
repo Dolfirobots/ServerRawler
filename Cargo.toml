@@ -2,8 +2,8 @@
 name = "ServerRawler"
 description = "A high performance Minecraft server crawler, written in Rust"
 license-file = "LICENSE"
-version = "0.7.4-beta"
-authors = ["Cyberdolfi"]
+version = "0.7.5-beta"
+authors = ["Cyberdolfi", "Dolfirobots"]
 edition = "2024"
 
 [dependencies]
