@@ -48,7 +48,7 @@ impl LogLevel {
             LogLevel::Success => ("[SUCCESS]", "#00FF00"),
             LogLevel::Warning => ("[WARN   ]", "#FFD700"),
             LogLevel::Error => ("[ERROR  ]", "#FF0000"),
-            LogLevel::Critical => ("[CRIT   ]", "##CD0000"),
+            LogLevel::Critical => ("[CRIT   ]", "#CD0000"),
         }
     }
 }
