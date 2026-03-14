@@ -4,7 +4,7 @@ use std::time::Duration;
 use base64::{Engine as _, engine::general_purpose};
 use semver::Version;
 use clap::Parser;
-use futures::{Stream, StreamExt};
+use futures::StreamExt;
 use colored_text::Colorize;
 use tokio::fs::File;
 use tokio::io::{AsyncWriteExt, BufWriter};
