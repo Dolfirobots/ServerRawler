@@ -22,7 +22,7 @@
 > Join my Discord, to easily use my Database
 
 > [!IMPORTANT]
-> This project is currently in paused, due some time stress!
+> This project is currently in paused!
 
 ---
 
