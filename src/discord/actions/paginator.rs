@@ -469,7 +469,7 @@ pub async fn create_paged_server_view(
         let mut components = build_manage_server_action_row(false, history);
         components.extend(create_action_row(current_page, total_pages, false));
 
-        let mut response = EditInteractionResponse::new()
+        let mut response = EditMessage::new()
             .embed(current_embed)
             .components(components);
 
@@ -478,11 +478,11 @@ pub async fn create_paged_server_view(
                 EditAttachments::new().add(attachment)
             );
         } else {
-            response = response.clear_attachments();
+            response = response.attachments(EditAttachments::new());
         }
 
-        interaction.edit_response(
-            &ctx.serenity_context(),
+        message.edit(
+            &ctx,
             response
         ).await?;
     }
