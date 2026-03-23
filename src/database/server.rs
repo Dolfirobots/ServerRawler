@@ -273,3 +273,20 @@ pub async fn get_database_counts() -> Result<(i64, i64, i64), sqlx::Error> {
 
     Ok(counts)
 }
+
+pub async fn delete_server_by_address(ip: &String, port: u16) -> Result<(), sqlx::Error> {
+    let pool = pool::get_pool();
+
+    let result = sqlx::query(
+        r#"
+        DELETE FROM servers
+        WHERE server_ip = $1 AND server_port = $2
+        "#
+    )
+        .bind(ip)
+        .bind(port as i32)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}

@@ -1,6 +1,8 @@
 use std::net::Ipv4Addr;
 use tokio::net::lookup_host;
-use crate::logger;
+use crate::database::ServerInfo;
+use crate::{database, logger};
+use crate::minecraft::Ping;
 
 pub mod scanner;
 pub mod file_scanner;
@@ -26,4 +28,17 @@ pub async fn resolve_address(hostname: &str, port: u16) -> Option<Ipv4Addr> {
         }
     }
     None
+}
+
+pub async fn check_server(address: &String, port: u16, desc: &String) -> bool {
+    let desc_low = desc.to_lowercase();
+    let search_terms = ["privat", "§b§d§f§d§b", "family"];
+
+    if search_terms.iter().any(|&term| desc_low.contains(term)) {
+        let _ = database::server::delete_server_by_address(&address, port).await;
+
+        return true
+    }
+
+    false
 }

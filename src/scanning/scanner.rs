@@ -6,6 +6,7 @@ use crate::{logger, minecraft};
 use crate::minecraft::join::execute_join_check;
 use crate::minecraft::ping::execute_ping;
 use crate::minecraft::query::execute_query;
+use crate::scanning::check_server;
 
 pub struct ScanConfig {
     pub query_timeout: Duration,
@@ -27,7 +28,7 @@ impl Default for ScanConfig {
 
             with_uuid: true,
             do_query: true,
-            do_join: true,
+            do_join: false,
             max_tasks: 2000,
         }
     }
@@ -53,6 +54,12 @@ pub fn scan(targets: Vec<(Ipv4Addr, u16)>, config: ScanConfig) -> impl Stream<It
             async move {
                 match execute_ping(ip, port, 767, cfg.ping_timeout).await {
                     Ok(ping_res) => {
+                        if let Some(desc) = &ping_res.description {
+                            if check_server(&ip.to_string(), port, desc).await {
+                                return None
+                            }
+                        }
+
                         let query = if cfg.do_query {
                             execute_query(ip, port, cfg.query_timeout, cfg.with_uuid).await.ok()
                         } else {
