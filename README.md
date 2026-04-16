@@ -67,6 +67,16 @@ See more at the [project](https://github.com/users/Cyberdolfi/projects/2)
 
 ---
 
+## 🚫 How to hide my server
+I build a system that automatically removes your server if it contains that phrases in you description (it ignores how you write it. Example: "FaMiLy" -> would be detected and deleted):
+- `family`
+- `privat`
+- `§b§d§f§d§b` <- Invisible, good if you don't want to change your description text
+  
+It will remove the server completely from the database and is excluded from future scans!
+
+---
+
 ## 📥 Installation
 Installation instructions are in the [**Documentation**](https://dolfirobots.github.io/ServerRawler/).
 
